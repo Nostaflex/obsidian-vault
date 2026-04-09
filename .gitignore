@@ -1,0 +1,16 @@
+# Données sensibles — jamais versionnées
+sensitive.nosync/
+
+# Log d'accès local (contient des chemins de fichiers locaux)
+_logs/access-log.jsonl
+
+# Conflits iCloud (état local transitoire)
+_logs/conflicts.txt
+* conflicted copy*
+*.icloud
+
+# Notes de session (peuvent contenir des infos de travail sensibles)
+_inbox/session/
+
+# macOS
+.DS_Store
