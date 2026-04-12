@@ -2,16 +2,13 @@
 """
 paper_synthesizer.py — Weekly paper synthesis pipeline
 Runs after corpus_collector.py (Saturday/Sunday)
-Uses Google Gemini 2.0 Flash (free tier) to extract atomic concepts from scientific papers.
+Uses Anthropic Claude Haiku Batch API to extract atomic concepts from scientific papers.
 
 Requirements:
-  pip install google-generativeai
+  pip install anthropic
 
 Environment:
-  GOOGLE_API_KEY — Get free at https://aistudio.google.com/apikey
-
-Free tier limits: 15 RPM, 1M TPM, 1500 RPD
-Rate limiting: 4s delay between calls (well within limits)
+  ANTHROPIC_API_KEY — Anthropic API key
 
 Usage:
   python3 paper_synthesizer.py [--domain DOMAIN] [--dry-run] [--week N]
@@ -25,11 +22,12 @@ import os
 import re
 import sys
 import time
+from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
+from typing import Optional
 
-from google import genai
-from google.genai import types as genai_types
+import anthropic
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -43,53 +41,61 @@ DOMAINS = ["ai", "iot", "cloud", "ecommerce"]
 
 TIER_ORDER = {"S": 3, "A": 2, "B": 1}
 
-MODEL = "gemini-2.0-flash"
+MODEL = "claude-haiku-4-5-20251001"
 MAX_TOKENS_CONCEPTS = 1024
 MAX_TOKENS_DIGEST = 1500
-GEMINI_RATE_LIMIT_DELAY = 4.0  # secondes entre appels (15 RPM max)
 
-# Gemini model instance (configured in main after API key check)
-model = None  # genai.Client, set in main()
+BATCH_JOBS_FILE = LOGS_DIR / "batch_jobs.json"
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
-CONCEPT_EXTRACTION_PROMPT = """Tu es un extracteur de concepts scientifiques pour un second brain Obsidian.
+# System prompt — stable, mis en cache (cache_control: ephemeral)
+SYSTEM_PROMPT = """\
+Tu es un extracteur de concepts scientifiques pour un second brain Obsidian.
+Projets actifs : gpparts (e-commerce Next.js), second-brain (PKM automatisé).
 
-Paper à analyser :
-{paper_content}
+RÈGLES ABSOLUES :
+1. DÉRIVER LE CLAIM, NE PAS TRADUIRE. Reformule dans tes propres mots. JAMAIS plus de 5 mots consécutifs de la source.
+2. MITOSE COGNITIVE : produis une liste numérotée de concepts AVANT les blocs JSON, puis 1 bloc JSON par concept.
+3. TITRE DÉCLARATIF : phrase affirmative testable en français (peut être vraie ou fausse).
+4. TIER ASSIGNMENT :
+   - S : directement applicable à gpparts ou second-brain aujourd'hui
+   - A : concept solide à valeur future documentée
+   - B : référence intéressante, 1 ligne essence suffit
+   - Ignorer contributions trop théoriques sans application pratique
 
-Domaine : {domain}
-Projets actifs : gpparts (e-commerce Next.js), second-brain (PKM automatisé)
-
-## Tâche
-
-Extraire les concepts clés de ce paper qui méritent une note atomique.
-
-Pour CHAQUE concept identifié, produis un bloc JSON séparé :
+Pour CHAQUE concept, produis un bloc JSON :
 ```json
-{{
-  "concept_title": "Phrase affirmative testable — le titre de la note",
+{
+  "concept_title": "Phrase affirmative testable en français",
   "tier": "S|A|B",
-  "tier_reason": "Pourquoi ce tier (lien avec les projets actifs ou valeur générale)",
-  "essence": "2-3 lignes reformulées dans tes propres mots — JAMAIS copié de l'abstract",
-  "detail": "Explication complète reformulée",
+  "tier_reason": "Lien concret avec gpparts/second-brain ou valeur générale",
+  "essence": "2-3 lignes reformulées — JAMAIS copiées de l'abstract",
+  "detail": "Explication complète reformulée dans tes propres mots",
   "tags": ["tag1", "tag2"],
-  "simple_explanation": "Explique en 15 mots max comme à un enfant de 12 ans",
-  "arxiv_id": "{arxiv_id}",
-  "source_url": "{source_url}"
-}}
+  "simple_explanation": "Explication en 15 mots max pour un enfant de 12 ans",
+  "paper_id": "à remplir depuis le contexte",
+  "source_url": "à remplir depuis le contexte"
+}
 ```
 
-Règles strictes :
-- `concept_title` DOIT être une phrase affirmative (peut être vraie ou fausse). Exemple: "Le federated learning réduit les coûts de transmission de 60% sur edge IoT" pas "Federated learning"
-- `essence` : reformule complètement — si tu ne peux pas expliquer simplement (simple_explanation), le concept est mal scopé
-- Tier S : directement applicable à gpparts ou second-brain
-- Tier A : concept solide à valeur future
-- Tier B : référence intéressante, 1 phrase suffit
-- Ignorer les contributions trop théoriques sans application pratique
-- Minimum 1 concept, maximum 4 concepts par paper
+Minimum 1 concept, maximum 4 concepts par paper.
+Produis UNIQUEMENT la liste numérotée puis les blocs JSON, séparés par des lignes vides.\
+"""
 
-Produis UNIQUEMENT les blocs JSON, séparés par des lignes vides."""
+# User prompt template — varie par paper (non caché)
+USER_PROMPT_TEMPLATE = """\
+Paper à analyser :
+Titre : {title}
+Domaine : {domain}
+paper_id : {paper_id}
+Source URL : {source_url}
+
+Contenu :
+{content}
+
+Extrait les concepts clés sous forme de blocs JSON selon les règles système.\
+"""
 
 DIGEST_PROMPT = """Tu crées une note de littérature pour un vault Obsidian.
 
@@ -108,6 +114,15 @@ Crée une synthèse narrative de 300-400 mots qui :
 3. Signale les 1-2 concepts les plus pertinents pour les projets gpparts/second-brain
 
 Format de sortie : markdown direct, pas de JSON. Titre H2 "## Tendances W{week_num}", puis H3 sections."""
+
+
+def sanitize_paper_id(paper_id: str) -> str:
+    """Transforme un paper_id en segment de nom de fichier sûr.
+
+    'arxiv:2401.12345' → 'arxiv-2401-12345'
+    's2:abc123'        → 's2-abc123'
+    """
+    return paper_id.replace(":", "-").replace(".", "-")
 
 
 # ── Frontmatter / paper parsing ───────────────────────────────────────────────
@@ -215,12 +230,18 @@ def parse_concepts_from_text(text: str) -> list[dict]:
 
 # ── Note / digest writers ─────────────────────────────────────────────────────
 
-def write_concept_note(concept: dict, domain: str, week_num: int, today: str) -> Path:
-    """Write a pre-note atomic file to _inbox/raw/concepts/. Returns the path."""
+def write_concept_note(concept: dict, domain: str, week_num: int, today: str,
+                       index: int = 1) -> Path:
+    """Write a pre-note atomic file to _inbox/raw/concepts/. Returns the path.
+
+    Naming convention : A-{paper_id_sanitized}-{n}.md
+    Ex: A-arxiv-2401-12345-1.md, A-s2-abc1234567890abc-2.md
+    """
     CONCEPTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    slug = slugify(concept.get("concept_title", "untitled"))
-    out_path = CONCEPTS_DIR / f"draft-{slug}.md"
+    paper_id = concept.get("paper_id", "")
+    pid_sanitized = sanitize_paper_id(paper_id) if paper_id else slugify(concept.get("concept_title", "untitled"))
+    out_path = CONCEPTS_DIR / f"A-{pid_sanitized}-{index}.md"
 
     tier = concept.get("tier", "B")
     source_url = concept.get("source_url", "")
@@ -302,7 +323,93 @@ Tags: #{domain} #digest #literature
     return out_path
 
 
-# ── Gemini API helpers ────────────────────────────────────────────────────────
+# ── Batch job recovery ────────────────────────────────────────────────────────
+
+def save_batch_job(domain: str, batch_id: str) -> None:
+    """Persiste le batch_id pour recovery en cas de crash."""
+    LOGS_DIR.mkdir(exist_ok=True)
+    jobs: dict = {}
+    if BATCH_JOBS_FILE.exists():
+        try:
+            jobs = json.loads(BATCH_JOBS_FILE.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            pass
+    jobs[domain] = {"batch_id": batch_id, "submitted_at": datetime.utcnow().isoformat()}
+    BATCH_JOBS_FILE.write_text(json.dumps(jobs, indent=2), encoding="utf-8")
+
+
+def load_pending_batch_job(domain: str) -> Optional[str]:
+    """Retourne un batch_id en attente pour ce domaine, ou None."""
+    if not BATCH_JOBS_FILE.exists():
+        return None
+    try:
+        jobs = json.loads(BATCH_JOBS_FILE.read_text(encoding="utf-8"))
+        return jobs.get(domain, {}).get("batch_id")
+    except (json.JSONDecodeError, KeyError):
+        return None
+
+
+def clear_batch_job(domain: str) -> None:
+    """Supprime le batch_id après traitement réussi."""
+    if not BATCH_JOBS_FILE.exists():
+        return
+    try:
+        jobs = json.loads(BATCH_JOBS_FILE.read_text(encoding="utf-8"))
+        jobs.pop(domain, None)
+        BATCH_JOBS_FILE.write_text(json.dumps(jobs, indent=2), encoding="utf-8")
+    except (json.JSONDecodeError, OSError):
+        pass
+
+
+# ── Anthropic Batch API ───────────────────────────────────────────────────────
+
+def submit_batch(papers: list, client: anthropic.Anthropic) -> str:
+    """Soumet tous les papers à l'Anthropic Batch API. Retourne le batch_id."""
+    requests = []
+    for paper in papers:
+        paper_id = paper.get("paper_id") or paper.get("arxiv_id", "unknown")
+        user_content = USER_PROMPT_TEMPLATE.format(
+            title=paper.get("title", ""),
+            domain=paper.get("domain", ""),
+            paper_id=paper_id,
+            source_url=paper.get("source_url", ""),
+            content=paper["content"][:3000],
+        )
+        requests.append({
+            "custom_id": str(paper["path"]),
+            "params": {
+                "model": MODEL,
+                "max_tokens": MAX_TOKENS_CONCEPTS,
+                "system": [
+                    {
+                        "type": "text",
+                        "text": SYSTEM_PROMPT,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+                "messages": [{"role": "user", "content": user_content}],
+            },
+        })
+    batch = client.messages.batches.create(requests=requests)
+    return batch.id
+
+
+def wait_for_batch(batch_id: str, client: anthropic.Anthropic,
+                   poll_interval: int = 15) -> None:
+    """Poll jusqu'à ce que le batch soit terminé."""
+    print(f"  [INFO] Batch {batch_id} soumis, polling…", file=sys.stderr)
+    while True:
+        status = client.messages.batches.retrieve(batch_id)
+        if status.processing_status == "ended":
+            return
+        counts = status.request_counts
+        print(
+            f"  [INFO] Batch {batch_id} — processing: {counts.processing} "
+            f"succeeded: {counts.succeeded} errored: {counts.errored}",
+            file=sys.stderr,
+        )
+        time.sleep(poll_interval)
+
 
 def _build_concepts_summary(concepts: list[dict]) -> str:
     lines = []
@@ -311,29 +418,6 @@ def _build_concepts_summary(concepts: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def call_gemini(prompt: str, max_output_tokens: int = MAX_TOKENS_CONCEPTS,
-                max_retries: int = 3) -> str:
-    """Appel Gemini avec retry exponentiel en cas d'erreur rate limit."""
-    for attempt in range(max_retries):
-        try:
-            response = model.models.generate_content(
-                model=MODEL,
-                contents=prompt,
-                config=genai_types.GenerateContentConfig(
-                    max_output_tokens=max_output_tokens,
-                    temperature=0.1,
-                )
-            )
-            return response.text
-        except Exception as e:
-            print(f"[DEBUG] Attempt {attempt+1} error: {type(e).__name__}: {e}", file=sys.stderr)
-            if "429" in str(e) or "quota" in str(e).lower() or "rate" in str(e).lower():
-                wait = GEMINI_RATE_LIMIT_DELAY * (2 ** attempt)
-                print(f"[WARN] Rate limit hit, waiting {wait:.0f}s…", file=sys.stderr)
-                time.sleep(wait)
-            else:
-                raise
-    raise RuntimeError(f"Failed after {max_retries} retries")
 
 
 # ── Domain processing ─────────────────────────────────────────────────────────
@@ -345,7 +429,7 @@ def process_domain(
     min_tier: str,
     dry_run: bool,
 ) -> dict:
-    """Process one domain end-to-end sequentially. Returns metrics dict."""
+    """Process one domain via Anthropic Batch API. Returns metrics dict."""
     print(f"\n── Domain: {domain} ──────────────────────────────────────────")
 
     papers = load_papers(domain)
@@ -356,81 +440,97 @@ def process_domain(
     print(f"  Found {len(papers)} paper(s)")
 
     if dry_run:
-        print(f"  [dry-run] Would process {len(papers)} paper(s) sequentially with Gemini:")
-        for i, paper in enumerate(papers):
-            prompt_preview = CONCEPT_EXTRACTION_PROMPT.format(
-                paper_content=paper["content"],
-                domain=domain,
-                arxiv_id=paper["arxiv_id"],
-                source_url=paper["source_url"],
-            )[:120].replace("\n", " ")
-            print(f"    [paper_{i}] {prompt_preview}…")
+        print(f"  [dry-run] Would submit {len(papers)} paper(s) to Anthropic Batch API")
+        for p in papers:
+            pid = p.get("paper_id") or p.get("arxiv_id", "unknown")
+            print(f"    - {pid}: {p['title'][:60]}")
         return {"domain": domain, "dry_run": True, "papers": len(papers)}
 
-    # Process papers sequentially with rate limiting
+    client = anthropic.Anthropic()
     min_tier_val = TIER_ORDER.get(min_tier, 1)
+
+    # ── Recovery : si un batch est déjà en cours pour ce domaine ────────────
+    batch_id = load_pending_batch_job(domain)
+    if batch_id:
+        print(f"  [INFO] Resuming existing batch {batch_id}")
+    else:
+        # Enrichir les papers avec paper_id depuis frontmatter
+        for p in papers:
+            meta, _ = parse_frontmatter(p["content"])
+            p["paper_id"] = meta.get("paper_id", p.get("arxiv_id", ""))
+
+        batch_id = submit_batch(papers, client)
+        save_batch_job(domain, batch_id)
+        print(f"  [INFO] Batch soumis : {batch_id}")
+
+    # ── Attendre la fin du batch ─────────────────────────────────────────────
+    wait_for_batch(batch_id, client)
+
+    # ── Construire index papers par path pour lookup dans les résultats ──────
+    papers_by_path = {str(p["path"]): p for p in papers}
+
+    # ── Traiter les résultats ────────────────────────────────────────────────
     all_concepts: list[dict] = []
+    errors: list[str] = []
 
-    for i, paper in enumerate(papers):
-        print(f"  [INFO] Processing paper {i+1}/{len(papers)}: {paper['title'][:60]}")
+    for result in client.messages.batches.results(batch_id):
+        if result.result.type != "succeeded":
+            errors.append(f"{result.custom_id}: {result.result.type}")
+            print(f"  [WARN] {result.custom_id}: {result.result.type}", file=sys.stderr)
+            continue
 
-        prompt = CONCEPT_EXTRACTION_PROMPT.format(
-            paper_content=paper["content"],
-            domain=domain,
-            arxiv_id=paper["arxiv_id"],
-            source_url=paper["source_url"],
-        )
-
-        raw_text = call_gemini(prompt, max_output_tokens=MAX_TOKENS_CONCEPTS)
+        raw_text = result.result.message.content[0].text
         concepts = parse_concepts_from_text(raw_text)
 
-        if not concepts:
-            print(f"  [WARN] No valid JSON concepts parsed for paper_{i}")
-        else:
-            # Filter by min tier
-            filtered = [c for c in concepts if TIER_ORDER.get(c.get("tier", "B"), 1) >= min_tier_val]
-            if not filtered:
-                print(f"  Skipped {paper['title'][:50]}: all concepts below tier {min_tier}")
-            else:
-                # Inject paper metadata into each concept (fallback if LLM left blanks)
-                for c in filtered:
-                    c.setdefault("source_url", paper["source_url"])
-                    c.setdefault("arxiv_id", paper["arxiv_id"])
-                all_concepts.extend(filtered)
-                print(f"  paper_{i}: {len(filtered)} concept(s) extracted")
+        paper = papers_by_path.get(result.custom_id, {})
+        paper_id = paper.get("paper_id", paper.get("arxiv_id", ""))
+        source_url = paper.get("source_url", "")
 
-        # Rate limiting — skip delay after last paper
-        if i < len(papers) - 1:
-            time.sleep(GEMINI_RATE_LIMIT_DELAY)
+        filtered = [c for c in concepts
+                    if TIER_ORDER.get(c.get("tier", "B"), 1) >= min_tier_val]
 
-    # Write concept pre-notes
+        for c in filtered:
+            c.setdefault("paper_id", paper_id)
+            c.setdefault("source_url", source_url)
+        all_concepts.extend(filtered)
+
+    # ── Écrire les notes atomiques ───────────────────────────────────────────
+    concepts_by_paper: dict = defaultdict(list)
+    for c in all_concepts:
+        concepts_by_paper[c.get("paper_id", "unknown")].append(c)
+
     written_paths: list[Path] = []
-    for concept in all_concepts:
-        path = write_concept_note(concept, domain, week_num, today)
-        written_paths.append(path)
-        print(f"  -> {path.name}")
+    for pid, concepts in concepts_by_paper.items():
+        for n, concept in enumerate(concepts, 1):
+            path = write_concept_note(concept, domain, week_num, today, index=n)
+            written_paths.append(path)
+            print(f"  -> {path.name}")
 
-    # Generate digest with actual concepts
+    # ── Générer le digest domaine ────────────────────────────────────────────
     digest_path = None
-    print(f"  [INFO] Generating digest for {domain}…")
-    paper_titles_str = "\n".join(f"- {p['title']}" for p in papers)
-    digest_prompt = DIGEST_PROMPT.format(
-        week_num=week_num,
-        domain=domain,
-        paper_titles=paper_titles_str,
-        concepts_summary=_build_concepts_summary(all_concepts) if all_concepts
-            else "Aucun concept extrait pour ce domaine cette semaine.",
-    )
-    digest_text = call_gemini(digest_prompt, max_output_tokens=MAX_TOKENS_DIGEST)
-
-    if digest_text:
+    if all_concepts:
+        digest_response = client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS_DIGEST,
+            system=[{"type": "text", "text": "Tu crées des notes de littérature synthétiques pour un vault Obsidian. Réponds en markdown direct, pas de JSON."}],
+            messages=[{
+                "role": "user",
+                "content": DIGEST_PROMPT.format(
+                    week_num=week_num,
+                    domain=domain,
+                    paper_titles="\n".join(f"- {p['title']}" for p in papers),
+                    concepts_summary=_build_concepts_summary(all_concepts),
+                ),
+            }],
+        )
+        digest_text = digest_response.content[0].text
         digest_path = write_digest(
             domain, week_num, digest_text,
             [p["title"] for p in papers], papers, today
         )
         print(f"  Digest -> {digest_path.name}")
 
-    # Move processed papers to _processed/
+    # ── Déplacer les papers traités ──────────────────────────────────────────
     processed_dir = PAPERS_DIR / domain / "_processed"
     processed_dir.mkdir(exist_ok=True)
     for paper in papers:
@@ -440,7 +540,9 @@ def process_domain(
         except OSError as exc:
             print(f"  [WARN] Could not move {paper['path'].name}: {exc}", file=sys.stderr)
 
-    # Tier distribution
+    # ── Cleanup batch job ────────────────────────────────────────────────────
+    clear_batch_job(domain)
+
     tier_dist: dict[str, int] = {"S": 0, "A": 0, "B": 0}
     for c in all_concepts:
         t = c.get("tier", "B")
@@ -452,6 +554,7 @@ def process_domain(
         "concepts_extracted": len(all_concepts),
         "tier_distribution": tier_dist,
         "digest_created": digest_path is not None,
+        "errors": errors,
     }
 
 
@@ -471,14 +574,18 @@ def write_metrics(metrics_list: list[dict], week_num: int, today: str) -> None:
         for tier, count in m.get("tier_distribution", {}).items():
             tier_dist[tier] = tier_dist.get(tier, 0) + count
 
-    # Rough token estimate (for informational purposes only — Gemini free tier has no cost)
+    all_errors = []
+    for m in metrics_list:
+        all_errors.extend(m.get("errors", []))
+
+    # Estimate tokens (Claude Haiku Batch ~$0.40/MTok input, $2/MTok output)
     estimated_tokens = concepts_total * MAX_TOKENS_CONCEPTS + digests_total * MAX_TOKENS_DIGEST
 
     payload = {
         "run_date": today,
         "week": week_num,
         "model": MODEL,
-        "api": "google-gemini-free-tier",
+        "api": "anthropic-claude-haiku-batch",
         "domains_processed": domains_processed,
         "papers_processed": papers_total,
         "concepts_extracted": concepts_total,
@@ -486,6 +593,7 @@ def write_metrics(metrics_list: list[dict], week_num: int, today: str) -> None:
         "digests_created": digests_total,
         "estimated_tokens": estimated_tokens,
         "estimated_cost_usd": 0.0,
+        "errors": all_errors,
     }
 
     out_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -494,80 +602,35 @@ def write_metrics(metrics_list: list[dict], week_num: int, today: str) -> None:
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Synthesize scientific papers into atomic Obsidian pre-notes.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
-    )
-    parser.add_argument(
-        "--domain",
-        choices=DOMAINS,
-        help="Process only this domain (ai|iot|cloud|ecommerce)",
-    )
-    parser.add_argument(
-        "--week",
-        type=int,
-        default=None,
-        help="ISO week number to tag outputs (default: current week)",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print prompts without calling the API",
-    )
-    parser.add_argument(
-        "--min-tier",
-        choices=["B", "A", "S"],
-        default="B",
-        help="Minimum tier to include in output (default: B = all tiers)",
-    )
-    return parser.parse_args()
-
-
 def main() -> None:
-    global model
-    args = parse_args()
+    parser = argparse.ArgumentParser(description="Paper synthesizer — Claude Haiku Batch")
+    parser.add_argument("--domain", choices=DOMAINS, default=None,
+                        help="Domaine spécifique (défaut : tous)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Afficher les papers sans appeler l'API")
+    parser.add_argument("--week", type=int, default=None,
+                        help="Numéro de semaine ISO (défaut : semaine courante)")
+    parser.add_argument("--min-tier", choices=["S", "A", "B"], default="B",
+                        dest="min_tier",
+                        help="Tier minimum à écrire (défaut : B)")
+    args = parser.parse_args()
 
-    # Validate API key early
-    if not args.dry_run:
-        google_api_key = os.environ.get("GOOGLE_API_KEY", "")
-        if not google_api_key:
-            print(
-                "Error: GOOGLE_API_KEY not set\n"
-                "Get a free key at: https://aistudio.google.com/apikey",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-        model = genai.Client(api_key=google_api_key)
+    if not os.environ.get("ANTHROPIC_API_KEY") and not args.dry_run:
+        print("[ERROR] ANTHROPIC_API_KEY non définie. Export requis.", file=sys.stderr)
+        sys.exit(1)
 
     today = date.today().isoformat()
-    week_num = args.week if args.week is not None else date.today().isocalendar()[1]
+    week_num = args.week or date.today().isocalendar()[1]
     domains_to_run = [args.domain] if args.domain else DOMAINS
 
-    print(f"paper_synthesizer.py — W{week_num} {today}")
-    print(f"Domains : {', '.join(domains_to_run)}")
-    print(f"Model   : {MODEL} (Google Gemini free tier)")
-    print(f"Min tier: {args.min_tier} | dry-run: {args.dry_run}")
-
-    all_metrics: list[dict] = []
+    metrics_list = []
     for domain in domains_to_run:
-        metrics = process_domain(
-            domain=domain,
-            week_num=week_num,
-            today=today,
-            min_tier=args.min_tier,
-            dry_run=args.dry_run,
-        )
-        all_metrics.append(metrics)
+        metrics = process_domain(domain, week_num, today, args.min_tier, args.dry_run)
+        metrics_list.append(metrics)
 
     if not args.dry_run:
-        write_metrics(all_metrics, week_num, today)
-
-    # Summary
-    total_papers = sum(m.get("papers_processed", 0) for m in all_metrics)
-    total_concepts = sum(m.get("concepts_extracted", 0) for m in all_metrics)
-    print(f"\nDone. {total_papers} paper(s) processed, {total_concepts} concept note(s) written.")
+        write_metrics(metrics_list, week_num, today)
+        print(f"\n[INFO] Synthesis terminée — résultats dans {CONCEPTS_DIR}")
 
 
 if __name__ == "__main__":
