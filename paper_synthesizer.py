@@ -17,6 +17,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -240,7 +241,21 @@ def write_concept_note(concept: dict, domain: str, week_num: int, today: str,
     CONCEPTS_DIR.mkdir(parents=True, exist_ok=True)
 
     paper_id = concept.get("paper_id", "")
-    pid_sanitized = sanitize_paper_id(paper_id) if paper_id else slugify(concept.get("concept_title", "untitled"))
+    if not paper_id:
+        # paper_id absent = upstream frontmatter corruption; log and use source_url hash as fallback
+        source_url = concept.get("source_url", "")
+        fallback_base = hashlib.md5(
+            source_url.encode("utf-8") if source_url else b"unknown",
+            usedforsecurity=False,
+        ).hexdigest()[:12]
+        print(
+            f"  [WARN] write_concept_note: missing paper_id for '{concept.get('concept_title','?')[:40]}'"
+            f" — using fallback key {fallback_base}",
+            file=sys.stderr,
+        )
+        pid_sanitized = f"unknown-{fallback_base}"
+    else:
+        pid_sanitized = sanitize_paper_id(paper_id)
     out_path = CONCEPTS_DIR / f"A-{pid_sanitized}-{index}.md"
 
     tier = concept.get("tier", "B")
@@ -395,9 +410,11 @@ def submit_batch(papers: list, client: anthropic.Anthropic) -> str:
 
 
 def wait_for_batch(batch_id: str, client: anthropic.Anthropic,
-                   poll_interval: int = 15) -> None:
-    """Poll jusqu'à ce que le batch soit terminé."""
+                   poll_interval: int = 15,
+                   max_wait_seconds: int = 86400) -> None:
+    """Poll until the batch is complete. Raises TimeoutError after max_wait_seconds."""
     print(f"  [INFO] Batch {batch_id} soumis, polling…", file=sys.stderr)
+    elapsed = 0
     while True:
         status = client.messages.batches.retrieve(batch_id)
         if status.processing_status == "ended":
@@ -405,10 +422,16 @@ def wait_for_batch(batch_id: str, client: anthropic.Anthropic,
         counts = status.request_counts
         print(
             f"  [INFO] Batch {batch_id} — processing: {counts.processing} "
-            f"succeeded: {counts.succeeded} errored: {counts.errored}",
+            f"succeeded: {counts.succeeded} errored: {counts.errored} "
+            f"[{elapsed}s elapsed]",
             file=sys.stderr,
         )
+        if elapsed >= max_wait_seconds:
+            raise TimeoutError(
+                f"Batch {batch_id} did not complete within {max_wait_seconds}s"
+            )
         time.sleep(poll_interval)
+        elapsed += poll_interval
 
 
 def _build_concepts_summary(concepts: list[dict]) -> str:
@@ -479,7 +502,11 @@ def process_domain(
             print(f"  [WARN] {result.custom_id}: {result.result.type}", file=sys.stderr)
             continue
 
-        raw_text = result.result.message.content[0].text
+        content_blocks = result.result.message.content
+        if not content_blocks:
+            errors.append(f"{result.custom_id}: empty response content")
+            continue
+        raw_text = content_blocks[0].text
         concepts = parse_concepts_from_text(raw_text)
 
         paper = papers_by_path.get(result.custom_id, {})
