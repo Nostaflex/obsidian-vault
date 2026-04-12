@@ -11,6 +11,17 @@
 #   bash ~/Documents/Obsidian/KnowledgeBase/nightly-agent.sh
 set -euo pipefail
 
+# ── Concurrent guard (mkdir lock) ────────────────────────────────────────────
+# Empêche deux instances simultanées (ex: launchd retry pendant un run long).
+# mkdir est atomique sur tout système POSIX — pas de dépendance externe.
+LOCKDIR="${HOME}/Documents/Obsidian/KnowledgeBase/_logs/nightly.run"
+if ! mkdir "$LOCKDIR" 2>/dev/null; then
+  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Nightly already running (lock held) — skip" \
+    >> "${HOME}/Documents/Obsidian/KnowledgeBase/_logs/nightly-agent.log"
+  exit 0
+fi
+trap "rmdir '$LOCKDIR' 2>/dev/null || true" EXIT
+
 VAULT="$HOME/Documents/Obsidian/KnowledgeBase"
 PROMPT="$VAULT/.nightly-prompt.md"
 LOG="$VAULT/_logs/nightly-agent.log"
