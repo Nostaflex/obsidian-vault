@@ -118,9 +118,12 @@ class TestGroundingRouter:
 
     def test_partially_supported_single_source(self):
         from notebooklm_weekly import GroundingRouter
-        text = "According to the source, the claim is partially supported by [Source 1]."
+        # Exactly 1 support phrase ("according to"), 2 sources, 0 dispute phrases
+        # → must land unambiguously in partially_supported.
+        text = "According to prior work [Source 1] [Source 2], the topic is discussed."
         verdict, confidence = GroundingRouter.parse_verdict(text)
-        assert verdict in ("partially_supported", "supported")
+        assert verdict == "partially_supported"
+        assert confidence == 0.60
 
     def test_insufficient_evidence_empty(self):
         from notebooklm_weekly import GroundingRouter

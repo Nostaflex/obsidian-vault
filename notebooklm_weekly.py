@@ -88,8 +88,12 @@ class NLMClient:
         self.timeout = timeout
         self._proc: Optional[subprocess.Popen] = None
         self._next_id = 1
+        self._id_lock = threading.Lock()
         self._response_q: queue.Queue = queue.Queue()
         self._reader_thread: Optional[threading.Thread] = None
+        self._stderr_thread: Optional[threading.Thread] = None
+        self._stderr_lines: list = []
+        self._subprocess_dead = False
 
     def __enter__(self) -> "NLMClient":
         self._start()
@@ -115,6 +119,9 @@ class NLMClient:
             )
         self._reader_thread = threading.Thread(target=self._read_loop, daemon=True)
         self._reader_thread.start()
+        # Drain stderr continuously — prevents PIPE-buffer deadlock on verbose stderr
+        self._stderr_thread = threading.Thread(target=self._stderr_loop, daemon=True)
+        self._stderr_thread.start()
         self._initialize()
 
     def _stop(self) -> None:
@@ -133,18 +140,42 @@ class NLMClient:
                     self._response_q.put(json.loads(line))
                 except json.JSONDecodeError:
                     pass
+        # stdout closed → subprocess exited. Push sentinel so _send wakes up.
+        self._subprocess_dead = True
+        self._response_q.put({"__dead__": True})
+
+    def _stderr_loop(self) -> None:
+        """Drain stderr into a buffer (cap 200 lines) to prevent PIPE deadlock."""
+        for line in self._proc.stderr:
+            if len(self._stderr_lines) < 200:
+                self._stderr_lines.append(line.rstrip())
+
+    def _stderr_tail(self, n: int = 10) -> str:
+        return "\n".join(self._stderr_lines[-n:])
 
     def _send(self, method: str, params: Optional[dict] = None, *, notify: bool = False) -> Optional[dict]:
+        if self._subprocess_dead:
+            raise NLMClientError(
+                f"MCP subprocess exited (code={self._proc.poll()}). "
+                f"stderr tail:\n{self._stderr_tail()}"
+            )
         msg: dict = {"jsonrpc": "2.0", "method": method}
         msg_id = None
         if not notify:
-            msg_id = self._next_id
-            self._next_id += 1
+            with self._id_lock:
+                msg_id = self._next_id
+                self._next_id += 1
             msg["id"] = msg_id
         if params is not None:
             msg["params"] = params
-        self._proc.stdin.write(json.dumps(msg) + "\n")
-        self._proc.stdin.flush()
+        try:
+            self._proc.stdin.write(json.dumps(msg) + "\n")
+            self._proc.stdin.flush()
+        except (BrokenPipeError, OSError) as exc:
+            raise NLMClientError(
+                f"MCP subprocess stdin closed during '{method}' "
+                f"(exit={self._proc.poll()}). stderr tail:\n{self._stderr_tail()}"
+            ) from exc
         if notify:
             return None
         deadline = time.time() + self.timeout
@@ -152,6 +183,12 @@ class NLMClient:
         while time.time() < deadline:
             try:
                 resp = self._response_q.get(timeout=1.0)
+                # Sentinel from reader thread: subprocess died mid-request
+                if resp.get("__dead__"):
+                    raise NLMClientError(
+                        f"MCP subprocess exited during '{method}' "
+                        f"(code={self._proc.poll()}). stderr tail:\n{self._stderr_tail()}"
+                    )
                 if resp.get("id") == msg_id:
                     for m in pending:
                         self._response_q.put(m)
@@ -483,6 +520,7 @@ def main() -> int:
         "rotations": [],
     }
 
+    notebook_data = None
     try:
         notebook_data = nb_mgr.load()
 
@@ -615,7 +653,6 @@ def main() -> int:
                 stats["concepts_grounded"] += 1
                 print(f"  Grounded {paper_id}: {verdict} ({confidence:.2f})")
 
-        nb_mgr.save(notebook_data)
         cb.record_success(stats)
         print(f"\nDone. Papers added: {stats['papers_added']} | "
               f"Concepts grounded: {stats['concepts_grounded']} | "
@@ -630,6 +667,14 @@ def main() -> int:
         failures = cb.record_failure(f"unexpected: {exc}")
         print(f"[ERROR] Unexpected: {exc} (failure #{failures})", file=sys.stderr)
         return 1
+    finally:
+        # Always persist whatever state we accumulated (prevents double-push on retry
+        # when an intermediate domain fails). Only in non-dry-run mode.
+        if notebook_data is not None and not args.dry_run:
+            try:
+                nb_mgr.save(notebook_data)
+            except Exception as save_exc:
+                print(f"[WARN] Failed to persist notebook state: {save_exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":
