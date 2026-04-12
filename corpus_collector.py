@@ -14,10 +14,10 @@ Nouveautés v2 :
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
-import hashlib
 import re
 import subprocess
 import time
@@ -60,6 +60,11 @@ DOMAIN_FALLBACK_KEYWORDS = {
 DEFAULT_MAX = 5       # réduit de 10 à 5 pour limiter le Collector's Fallacy
 DEFAULT_MIN_SCORE = 0.3
 
+# ── Canonical paper ID ────────────────────────────────────────────────────────
+ARXIV_PREFIX = "arxiv:"
+S2_PREFIX = "s2:"
+S2_HASH_LEN = 16  # 64-bit truncation — ~1 in 4B collision at 77k papers
+
 
 # ── Déduplication arxiv_id ────────────────────────────────────────────────────
 
@@ -73,10 +78,16 @@ def canonical_paper_id(arxiv_id: str, title: str) -> str:
 
     - Paper arXiv : 'arxiv:{id_normalisé}'
     - Paper sans arXiv ID (Semantic Scholar, journals) : 's2:{md5(title)[:16]}'
+    Raises ValueError if both arxiv_id and title are empty/whitespace.
     """
-    if arxiv_id:
-        return f"arxiv:{normalize_arxiv_id(arxiv_id)}"
-    return f"s2:{hashlib.md5(title.lower().strip().encode()).hexdigest()[:16]}"
+    if arxiv_id and arxiv_id.strip():
+        return f"{ARXIV_PREFIX}{normalize_arxiv_id(arxiv_id.strip())}"
+    normalized_title = (title or "").lower().strip()
+    if not normalized_title:
+        raise ValueError(
+            "canonical_paper_id requires either a non-empty arxiv_id or a non-empty title"
+        )
+    return f"{S2_PREFIX}{hashlib.md5(normalized_title.encode('utf-8'), usedforsecurity=False).hexdigest()[:S2_HASH_LEN]}"
 
 
 def load_seen_ids() -> set:
@@ -89,9 +100,12 @@ def load_seen_ids() -> set:
             for line in legacy_file.read_text(encoding="utf-8").splitlines()
             if line.strip()
         }
-        migrated = {f"arxiv:{id_}" for id_ in legacy_ids}
+        migrated = {f"{ARXIV_PREFIX}{id_}" for id_ in legacy_ids}
         SEEN_IDS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        SEEN_IDS_FILE.write_text("\n".join(sorted(migrated)) + "\n", encoding="utf-8")
+        tmp = SEEN_IDS_FILE.with_suffix(".tmp")
+        tmp.write_text("\n".join(sorted(migrated)) + "\n", encoding="utf-8")
+        os.replace(tmp, SEEN_IDS_FILE)
+        legacy_file.rename(legacy_file.with_suffix(".migrated"))  # mark as done
         print(f"[INFO] Migré {len(migrated)} IDs : seen-arxiv-ids.txt → seen-paper-ids.txt")
         return migrated
 
@@ -102,9 +116,11 @@ def load_seen_ids() -> set:
 
 
 def save_seen_ids(seen: set) -> None:
-    """Persiste l'ensemble des arxiv_ids vus (trié pour lisibilité)."""
+    """Persiste l'ensemble des paper_ids canoniques vus (trié pour lisibilité)."""
     SEEN_IDS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    SEEN_IDS_FILE.write_text("\n".join(sorted(seen)) + "\n", encoding="utf-8")
+    tmp = SEEN_IDS_FILE.with_suffix(".tmp")
+    tmp.write_text("\n".join(sorted(seen)) + "\n", encoding="utf-8")
+    os.replace(tmp, SEEN_IDS_FILE)
 
 
 # ── Tags vault ────────────────────────────────────────────────────────────────
