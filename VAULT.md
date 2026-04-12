@@ -1,84 +1,107 @@
 # Knowledge Base — Règles et conventions
 
-## Template de note (obligatoire)
+## Structure des dossiers
 
-```markdown
-# Titre du concept (une seule idée)
+- `universal/` — Notes applicables à 2+ projets
+- `projects/{projet}/` — Notes spécifiques à 1 projet
+- `_inbox/session/` — Notes de session Claude (input nightly)
+- `_inbox/raw/articles|docs|repos/` — Contenu externe brut (input nightly)
+- `_inbox/raw/papers/{domain}/` — Papers scientifiques collectés par corpus_collector.py
+- `_inbox/raw/concepts/` — Pre-notes atomiques générées par paper_synthesizer.py
+- `_inbox/review/` — Files en attente de revue humaine (bridge notes draft, weekly review)
+- `_meta/` — INDEX, context-cards, MOC, LOG, signals
+- `_logs/` — Logs opérationnels (last-nightly.json, maintenance-report, broken-links)
+- `_archive/` — Notes archivées (maturity: archive-candidate depuis 30+ jours)
 
-Source: [nom ou URL] | Vérifié: YYYY-MM-DD | Confiance: haute/moyenne/basse
-Tags: #tag1 #tag2 #tag3
+## Règle de filing
+
+**universal/** : applicable à 2+ projets (ex: pattern technique, convention transversale)
+**projects/{projet}/** : spécifique à 1 projet
+
+Auditer avant de créer : si un concept concerne gpparts ET second-brain → universal/
+
+## Types de notes (champ `type` dans le frontmatter)
+
+| type | Description |
+|------|-------------|
+| `concept` | Idée, principe, concept technique |
+| `decision` | Décision d'architecture ou de design |
+| `pattern` | Pattern réutilisable |
+| `discovery` | Découverte, observation |
+| `anti-bug` | Anti-pattern, bug connu à éviter |
+| `bridge` | Note de pont — explique POURQUOI deux concepts sont liés |
+| `literature` | Synthèse d'une source externe (digest, paper) |
+
+## Niveaux de maturité (champ `maturity`)
+
+| maturity | Signification |
+|----------|--------------|
+| `fleeting` | Créé par l'agent — non validé par Djemil. Durée de vie < 14 jours avant review. |
+| `literature` | Validé par Djemil. Reformulé, ancré dans une source. |
+| `evergreen` | Note permanente. Autonome, décontextualisée, titre déclaratif fort. |
+| `archive-candidate` | Signalé par le lint. 0 backlinks depuis 30+ jours. |
+
+**Règle critique : seul Djemil promeut une note. L'agent crée toujours `fleeting`.**
+
+## Tier List (champ `tier`)
+
+| tier | Critère |
+|------|---------|
+| `S` | Directement applicable à un projet actif. Traitement complet. |
+| `A` | Concept solide à valeur future. Note atomique complète. |
+| `B` | Référence intéressante. Essentiel court (1 phrase). |
+
+## Template de note atomique
+
+```yaml
+---
+type: concept
+maturity: fleeting
+tier: A
+created: YYYY-MM-DD
+source_chain:
+  - "origin: URL ou chemin source primaire"
+  - "via: chemin intermédiaire (digest, session)"
+---
+
+# [Titre déclaratif — phrase affirmative testable]
+
+Tags: #tag1 #tag2
 
 ## Essentiel
-
-[Ce qu'il faut savoir en 3 lignes max — lu en priorité par Claude, ~50 tokens]
+[2-3 lignes max. Reformulé, jamais copié-collé.]
 
 ## Détail
-
-[Explication complète, exemples, code si pertinent]
+[Contenu complet reformulé.]
 
 ## Liens
-
-- [[note-cible-confirmée-dans-INDEX]]
+- [[note-existante]] — raison du lien en 1 phrase
 
 <!-- generated: YYYY-MM-DD -->
 ```
 
-## Règle d'atomicité (Zettelkasten)
+## Conventions de nommage
 
-1 note = 1 concept testable indépendamment.
-Test : peut-on supprimer une section sans que le reste soit incomplet ?
-Si oui → deux notes distinctes.
+- Noms de fichiers : kebab-case, descriptifs, préfixe type quand utile
+  - `decision-{nom}.md` — pas de sous-dossier decisions/
+  - `anti-bug-{nom}.md`
+  - `pattern-{nom}.md`
+  - `discovery-{nom}.md`
+  - `bridge-{concept-a}-{concept-b}.md`
+- Wikilinks : Obsidian résout par **basename** (sans chemin)
+- Éviter les sous-dossiers dans projects/ (ex: `decisions/`) — ça casse les wikilinks
 
-## Règle des wikilinks (write-time)
+## Agents automatisés
 
-Un `[[lien]]` n'est écrit que si la note cible est confirmée dans INDEX.md
-au moment de l'écriture. Sinon → texte simple sans brackets.
-Raison : les LLMs génèrent des liens vers des notes inexistantes (Karpathy 2025).
+- **Nightly agent** : tourne à 2h17 via launchd. Traite _inbox/session/ + _inbox/raw/
+- **corpus_collector.py** : hebdomadaire (samedi). Collecte papers arXiv + Semantic Scholar.
+- **paper_synthesizer.py** : hebdomadaire (dimanche). Gemini API → pre-notes atomiques dans _inbox/raw/concepts/
 
-## Niveaux de confiance
+## Projets actifs
 
-- **haute** — documentation officielle OU consensus ≥3 sources → `_inbox/agent/`
-- **moyenne** — source reconnue, consensus partiel → `_inbox/agent/`
-- **basse** — journalistique, signal faible → `_inbox/review/` (validation manuelle)
+- **gpparts** : plateforme e-commerce pièces auto (Next.js 15)
+- **second-brain** : ce vault lui-même
 
-## Quarantine et promotion
+## Zones interdites
 
-Toutes les notes nocturnes → `_inbox/agent/YYYY-MM-DD/`
-Promotion automatique après **72h sans rejet** (approbation silencieuse).
-Validation explicite : ajouter `#validated` dans Obsidian → Auto Note Mover déplace.
-Notes marquées `[A]` dans les context-cards = agent pending.
-
-## Arbre de décision filing (déterministe)
-
-```
-Est-ce vrai indépendamment du projet ?
-  └─ OUI → universal/
-  └─ NON → projects/<projet>/
-
-Référence du code spécifique au projet ?
-  └─ OUI → projects/<projet>/
-
-Décision d'architecture (ADR) ?
-  └─ OUI → projects/<projet>/decisions/
-```
-
-## Convention succession (remplacement de note)
-
-Ajouter dans la note remplaçante :
-`Remplace: [[ancienne-note]]`
-Déplacer l'ancienne vers `_inbox/review/superseded/`.
-
-## Accès vault (Claude)
-
-Claude accède via **`Read` tool natif** aux dossiers `universal/`, `projects/`, `_meta/`.
-Le MCP `obsidian-vault` est sandboxé au workspace VS Code — ne pas l'utiliser pour le vault.
-
-Exclus : `sensitive.nosync/`, `_inbox/`, `_logs/`, `_archive/`
-
-## Règles absolues (agent nocturne)
-
-- Ne jamais toucher à `sensitive/`
-- Ne jamais écrire directement dans `universal/` ou `projects/`
-- Toujours passer par `_inbox/agent/` (quarantine)
-- Filtrer tokens, clés API, URLs privées avant tout écrit
-- Vérifier wikilinks contre INDEX.md avant écriture
+- `sensitive.nosync/` et `_work.nosync/` — jamais toucher

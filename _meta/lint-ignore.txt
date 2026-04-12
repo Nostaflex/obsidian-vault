@@ -1,0 +1,8 @@
+# Wikilinks à ignorer dans le lint (faux positifs connus)
+# Format: un wikilink par ligne (sans les [[ ]])
+
+# Exemples illustratifs dans decision-knowledge-graph-deferred.md (code block + prose)
+ancienne-note
+note-opposée
+note-dépendante
+wikilinks

@@ -26,13 +26,19 @@ rsync -a --quiet "$VAULT/" "$BACKUP/" \
   --exclude="* conflicted copy*"
 echo "✓ Backup OK → $BACKUP"
 
+# 1b. Vérifier que _work.nosync/ n'est pas en cours de sync iCloud
+if brctl status "$VAULT/_work.nosync" 2>/dev/null | grep -q "uploaded\|uploading\|download"; then
+  echo "🚨 ALERTE: _work.nosync/ est en cours de sync iCloud — vérifier immédiatement"
+fi
+
 # 2. Détecter crash run précédent
 if [ -f "$LOGS/last-nightly.json" ]; then
   STATUS=$(jq -r '.status // "unknown"' "$LOGS/last-nightly.json" 2>/dev/null || echo "unknown")
   if [ "$STATUS" = "in_progress" ]; then
     echo "⚠️  Run précédent interrompu (status: in_progress) — restore depuis backup"
     rsync -a --quiet "$BACKUP/" "$VAULT/" \
-      --exclude="sensitive.nosync"
+      --exclude="sensitive.nosync" \
+      --exclude="_work.nosync"
     jq '.status = "restored_after_crash"' "$LOGS/last-nightly.json" >/tmp/nightly.tmp &&
       mv /tmp/nightly.tmp "$LOGS/last-nightly.json"
     echo "✓ Vault restauré depuis $BACKUP"
@@ -50,11 +56,12 @@ else
   echo "✓ Aucune copie de conflit iCloud"
 fi
 
-# 4. Reconstruire INDEX.md depuis fichiers réels (exclut sensitive.nosync et .icloud)
+# 4. Reconstruire INDEX.md depuis fichiers réels (exclut sensitive.nosync, .icloud, _processed, _archive)
 NOTE_COUNT=$(
   find "$VAULT/universal" "$VAULT/projects" -name "*.md" \
     ! -name "INDEX.md" ! -name "VAULT.md" ! -name "context-*.md" \
-    ! -name "*.icloud" 2>/dev/null |
+    ! -name "*.icloud" \
+    ! -path "*/_processed/*" ! -path "*/_archive/*" 2>/dev/null |
     wc -l | tr -d ' '
 )
 
@@ -71,12 +78,25 @@ NOTE_COUNT=$(
   find "$VAULT/universal" "$VAULT/projects" -name "*.md" \
     ! -name "INDEX.md" ! -name "VAULT.md" ! -name "context-*.md" \
     ! -name "*.icloud" \
+    ! -path "*/_processed/*" ! -path "*/_archive/*" \
     2>/dev/null | sort | while read -r f; do
     TITLE=$(head -1 "$f" 2>/dev/null | sed 's/^# //')
     TAGS=$(grep "^Tags:" "$f" 2>/dev/null | sed 's/^Tags: //' || echo "—")
     RELPATH="${f#$VAULT/}"
     echo "- [$TITLE]($RELPATH) — $TAGS"
   done
+  # Section _work.nosync — titres H1 uniquement, contenu jamais lu
+  WORK_COUNT=$(find "$VAULT/_work.nosync" -name "*.md" ! -name "README.md" 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$WORK_COUNT" -gt "0" ]; then
+    echo ""
+    echo "### Travail (index structurel — contenu local uniquement)"
+    echo ""
+    find "$VAULT/_work.nosync" -name "*.md" ! -name "README.md" 2>/dev/null | sort | while read -r f; do
+      TITLE=$(head -1 "$f" 2>/dev/null | sed 's/^# //')
+      RELPATH="${f#$VAULT/}"
+      echo "- [🔒 $TITLE]($RELPATH) — work-only"
+    done
+  fi
 } >/tmp/INDEX_rebuilt.md
 
 echo "✓ INDEX.md reconstruit ($NOTE_COUNT notes) → /tmp/INDEX_rebuilt.md"
@@ -91,9 +111,11 @@ LINKS=$(grep -r '\[\[' "$VAULT/universal" "$VAULT/projects" 2>/dev/null \
 
 if [ -n "$LINKS" ]; then
   while IFS= read -r LINK; do
-    # Obsidian wikilinks = filename (sans extension), pas le titre H1
+    # Obsidian résout les wikilinks par basename uniquement (sans chemin)
+    # On extrait le basename du lien (après le dernier /) pour gérer les liens avec chemin partiel
+    BASENAME="${LINK##*/}"
     FOUND=$(find "$VAULT/universal" "$VAULT/projects" \
-      -name "${LINK}.md" ! -name "*.icloud" 2>/dev/null | head -1 || true)
+      -name "${BASENAME}.md" ! -name "*.icloud" 2>/dev/null | head -1 || true)
     if [ -z "$FOUND" ]; then
       echo "BROKEN: [[$LINK]]" >>/tmp/broken-links.txt
     fi

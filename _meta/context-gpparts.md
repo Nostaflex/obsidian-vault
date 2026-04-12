@@ -10,7 +10,9 @@ _Régénéré par l'agent nocturne à chaque run. Max 200 tokens. Quota : 3 sect
 
 ## Stack actuelle
 
-_(vide — alimenté par l'agent nocturne)_
+- [[nextjs-15-breaking-changes-cache]] — fetch sans cache = no-store, next/headers async
+- [[discovery-nextjs-16-breaking-changes]] — breaking changes Next.js 16 à auditer
+- [[discovery-facture-electronique-fr-2026]] — deadline légale réception e-invoicing 1er sept. 2026
 
 ## Focus session en cours
 
