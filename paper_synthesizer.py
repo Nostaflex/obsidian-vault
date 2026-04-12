@@ -28,7 +28,8 @@ import time
 from datetime import date, datetime
 from pathlib import Path
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ MAX_TOKENS_DIGEST = 1500
 GEMINI_RATE_LIMIT_DELAY = 4.0  # secondes entre appels (15 RPM max)
 
 # Gemini model instance (configured in main after API key check)
-model: genai.GenerativeModel | None = None
+model = None  # genai.Client, set in main()
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
@@ -315,16 +316,18 @@ def call_gemini(prompt: str, max_output_tokens: int = MAX_TOKENS_CONCEPTS,
     """Appel Gemini avec retry exponentiel en cas d'erreur rate limit."""
     for attempt in range(max_retries):
         try:
-            response = model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
+            response = model.models.generate_content(
+                model=MODEL,
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
                     max_output_tokens=max_output_tokens,
                     temperature=0.1,
                 )
             )
             return response.text
         except Exception as e:
-            if "429" in str(e) or "quota" in str(e).lower():
+            print(f"[DEBUG] Attempt {attempt+1} error: {type(e).__name__}: {e}", file=sys.stderr)
+            if "429" in str(e) or "quota" in str(e).lower() or "rate" in str(e).lower():
                 wait = GEMINI_RATE_LIMIT_DELAY * (2 ** attempt)
                 print(f"[WARN] Rate limit hit, waiting {wait:.0f}s…", file=sys.stderr)
                 time.sleep(wait)
@@ -536,8 +539,7 @@ def main() -> None:
                 file=sys.stderr,
             )
             sys.exit(1)
-        genai.configure(api_key=google_api_key)
-        model = genai.GenerativeModel(MODEL)
+        model = genai.Client(api_key=google_api_key)
 
     today = date.today().isoformat()
     week_num = args.week if args.week is not None else date.today().isocalendar()[1]
