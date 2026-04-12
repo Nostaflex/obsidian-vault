@@ -17,6 +17,7 @@ import argparse
 import json
 import math
 import os
+import hashlib
 import re
 import subprocess
 import time
@@ -30,7 +31,7 @@ from pathlib import Path
 VAULT = Path(os.environ.get("HOME", "~")) / "Documents/Obsidian/KnowledgeBase"
 RAW_DIR = VAULT / "_inbox/raw/papers"
 REBUILD_SCRIPT = VAULT / "corpus-rebuild.sh"
-SEEN_IDS_FILE = VAULT / "_logs/seen-arxiv-ids.txt"
+SEEN_IDS_FILE = VAULT / "_logs/seen-paper-ids.txt"
 INDEX_FILE = VAULT / "_meta/INDEX.md"
 
 DOMAINS = {
@@ -67,8 +68,33 @@ def normalize_arxiv_id(arxiv_id: str) -> str:
     return re.sub(r'v\d+$', '', arxiv_id.strip())
 
 
+def canonical_paper_id(arxiv_id: str, title: str) -> str:
+    """Retourne une clé canonique stable pour la déduplication.
+
+    - Paper arXiv : 'arxiv:{id_normalisé}'
+    - Paper sans arXiv ID (Semantic Scholar, journals) : 's2:{md5(title)[:16]}'
+    """
+    if arxiv_id:
+        return f"arxiv:{normalize_arxiv_id(arxiv_id)}"
+    return f"s2:{hashlib.md5(title.lower().strip().encode()).hexdigest()[:16]}"
+
+
 def load_seen_ids() -> set:
-    """Charge les arxiv_ids déjà vus depuis _logs/seen-arxiv-ids.txt."""
+    """Charge les paper_ids déjà vus. Migre seen-arxiv-ids.txt si nécessaire."""
+    legacy_file = SEEN_IDS_FILE.parent / "seen-arxiv-ids.txt"
+
+    if not SEEN_IDS_FILE.exists() and legacy_file.exists():
+        legacy_ids = {
+            line.strip()
+            for line in legacy_file.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+        migrated = {f"arxiv:{id_}" for id_ in legacy_ids}
+        SEEN_IDS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        SEEN_IDS_FILE.write_text("\n".join(sorted(migrated)) + "\n", encoding="utf-8")
+        print(f"[INFO] Migré {len(migrated)} IDs : seen-arxiv-ids.txt → seen-paper-ids.txt")
+        return migrated
+
     if not SEEN_IDS_FILE.exists():
         return set()
     lines = SEEN_IDS_FILE.read_text(encoding="utf-8").splitlines()
@@ -306,11 +332,13 @@ def format_paper_as_markdown(paper: dict, domain: str) -> str:
 
     arxiv_id = paper.get("arxiv_id", "")
     arxiv_id_norm = normalize_arxiv_id(arxiv_id) if arxiv_id else ""
+    paper_id = paper.get("paper_id", canonical_paper_id(arxiv_id, paper.get("title", "")))
     collected = datetime.utcnow().strftime("%Y-%m-%d")
 
     return f"""---
 type: paper
 domain: {domain}
+paper_id: "{paper_id}"
 arxiv_id: "{arxiv_id}"
 arxiv_id_normalized: "{arxiv_id_norm}"
 authors:{authors_yaml}
@@ -363,10 +391,10 @@ def save_papers(papers: list, domain: str, seen_ids: set,
         if not p.get("title"):
             continue
 
-        # ── Déduplication par arxiv_id normalisé ────────────────────────────
+        # ── Déduplication par canonical paper_id ────────────────────────────
         arxiv_id_raw = p.get("arxiv_id", "")
-        arxiv_id_norm = normalize_arxiv_id(arxiv_id_raw) if arxiv_id_raw else ""
-        if arxiv_id_norm and arxiv_id_norm in seen_ids:
+        paper_id = canonical_paper_id(arxiv_id_raw, p.get("title", ""))
+        if paper_id in seen_ids:
             stats["duplicates"] += 1
             continue
 
@@ -389,13 +417,13 @@ def save_papers(papers: list, domain: str, seen_ids: set,
         slug = "".join(c if c.isalnum() else "_" for c in slug).strip("_")
         fname = out_dir / f"{p['date']}_{slug}.md"
         if not fname.exists():
+            # Enrichir le dict avec paper_id canonique
+            p["paper_id"] = paper_id
+
             fname.write_text(format_paper_as_markdown(p, domain), encoding="utf-8")
             stats["saved"] += 1
             stats["scores"].append(score)
-
-            # Marquer l'id comme vu
-            if arxiv_id_norm:
-                seen_ids.add(arxiv_id_norm)
+            seen_ids.add(paper_id)
 
     return stats
 
