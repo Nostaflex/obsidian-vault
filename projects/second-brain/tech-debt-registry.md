@@ -234,6 +234,33 @@ Philosophies divergentes (orchestrator-subagent vs plan TDD).
 **Détail** : `knowledge-agent`, `timeline-report`, `version-bump`, `smart-explore` jamais appelés dans logs. Conçus pour dev plugins, pas Second Brain.
 **Action** : Aucune — cohabitent sans nuire.
 
+### TD-2026-019 — paper_synthesizer.py orphelin (jamais branché en prod)
+**Sévérité** : 🟠 HAUTE (664 lignes Python + Anthropic Batch API + 47 papers en backlog ne sont jamais traités)
+**Découvert** : 2026-04-13 (audit Opus, test empirique nightly run)
+**Statut** : `open`
+**Détail** : Script requiert `ANTHROPIC_API_KEY` env var (line 645) mais aucune plomberie ne l'export :
+- ❌ Pas dans `~/Library/LaunchAgents/com.second-brain.nightly.plist` (env = juste PATH+HOME)
+- ❌ Pas dans Keychain (cherché `anthropic-api-key`, `anthropic`)
+- ❌ Pas dans `~/.zshrc` / `~/.bash_profile` / `~/.profile`
+- ❌ `nightly-agent.sh` lance `claude --print` (auth Claude Code, pas API key Python SDK)
+
+Conséquence : `_inbox/raw/papers/` accumule 47 papers depuis ~7 jours (W15 → W16) sans personne pour les processer en concepts atomiques. Le pipeline `corpus_collector → paper_synthesizer → MOC` est interrompu après collecte.
+
+**Action proposée** (γ — choisi 2026-04-13 22:50) :
+1. Stocker clé Anthropic dans Keychain (pattern `github-pat` éprouvé) :
+   `security add-generic-password -U -a $USER -s anthropic-api-key -w "sk-ant-..."`
+2. Wrapper `paper-synthesizer.sh` qui charge depuis Keychain + lance Python :
+   ```bash
+   #!/bin/bash
+   export ANTHROPIC_API_KEY=$(security find-generic-password -a $USER -s anthropic-api-key -w)
+   python3 "$(dirname "$0")/paper_synthesizer.py" "$@"
+   ```
+3. Ajouter au launchd plist hebdomadaire (`com.second-brain.weekly.plist`) ou intégrer à `nightly-agent.sh` après `integrity-check`.
+4. Run de validation sur les 47 papers en attente (Anthropic Batch, ~$1-3 estimé)
+5. Mesurer le résultat : si le pipeline complet (papers → concepts → MOC routing → /load-moc) délivre de la valeur, garder ; sinon supprimer (Karpathy approach : 664 lignes mortes ont un coût de maintenance > valeur).
+
+**Décision stratégique attachée** : "on simplifiera à partir du résultat" (user 2026-04-13). Le finding empirique post-fix décide : connecter (γ valid) ou supprimer (validation forte du smell #3 over-engineered).
+
 ---
 
 ## ✅ Résolus
