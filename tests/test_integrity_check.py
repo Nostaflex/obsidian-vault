@@ -211,6 +211,17 @@ class TestDetectIcloudConflicts:
         assert len(result) == 1
         assert "conflicted copy" in result[0].name
 
+    def test_alerts_on_meta_dir_conflicts(self, tmp_vault):
+        # Régression: conflits iCloud dans _meta/moc/ doivent être détectés
+        # (MOCs critiques pour /load-moc routing — vault-as-graph-memory)
+        _write_note(
+            tmp_vault / "_meta" / "moc" / "moc-X (Mac mini conflicted copy 2026-04-12).md",
+            "Conflict",
+        )
+        result = detect_icloud_conflicts(tmp_vault)
+        assert len(result) == 1
+        assert "_meta/moc" in str(result[0])
+
 
 class TestRebuildIndex:
     def test_empty_vault_index(self, tmp_vault):
