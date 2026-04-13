@@ -56,11 +56,19 @@ if [ ! -f "$PROMPT" ]; then
   exit 1
 fi
 
-# 1. Pré-run : integrity-check
+# 1. Pré-run : integrity-check (Python — migré depuis bash 2026-04-13, TD-2026-016)
 echo "→ integrity-check..." >> "$LOG"
-bash "$VAULT/integrity-check.sh" >> "$LOG" 2>&1 || {
-  echo "⚠️  integrity-check a échoué — on continue quand même" >> "$LOG"
-}
+python3 "$VAULT/integrity_check.py" >> "$LOG" 2>&1
+INTEGRITY_RC=$?
+if [ "$INTEGRITY_RC" -eq 2 ]; then
+  # Exit 2 = conflits iCloud détectés — action manuelle requise, on stoppe
+  echo "🚨 integrity-check : conflits iCloud détectés — run nocturne annulé (fix les conflits d'abord)" >> "$LOG"
+  exit 2
+elif [ "$INTEGRITY_RC" -ne 0 ]; then
+  # Fix TD-2026-017 : plus de masquage silencieux des échecs critiques (rsync, restore)
+  echo "🚨 integrity-check a échoué (exit $INTEGRITY_RC) — run nocturne annulé pour éviter corruption" >> "$LOG"
+  exit 1
+fi
 
 # 2. Lancer l'agent nocturne
 echo "→ Lancement agent nocturne..." >> "$LOG"
