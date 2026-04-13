@@ -19,6 +19,9 @@ argument-hint: "<topic> — ex: 'bash vs python', 'crash nightly', 'security aud
 ```bash
 cd /Users/djemildavid/Documents/Obsidian/KnowledgeBase
 
+# Log invocation (pour mesurer adoption + analyser topics demandés)
+mkdir -p _logs && echo "$(date -u +%FT%TZ) $ARGUMENTS" >> _logs/load-moc.log
+
 # Détecte les notes ajoutées depuis la dernière régen MOC
 # (gap entre 2 nightly cron). Sortie vide = MOCs frais, on continue.
 echo "=== FRESHNESS CHECK ==="
@@ -64,7 +67,16 @@ echo "=== TOPIC: $ARGUMENTS ==="
 
 **Déclenché UNIQUEMENT si Tier 1 retourne "aucun MOC pertinent" ou ambigu.**
 
-Invoquer `mcp__claude-mem__search` avec le topic :
+**Health check d'abord** — éviter le faux-fallback silencieux si claude-mem worker down :
+
+```bash
+if ! curl -sf --max-time 1 http://localhost:37777/health > /dev/null 2>&1; then
+  echo "⚠️ claude-mem worker DOWN — Tier 2 indisponible, fallback Tier 3"
+  # Sauter directement à Tier 3
+fi
+```
+
+Si worker UP, invoquer `mcp__claude-mem__search` avec le topic :
 
 ```
 mcp__plugin_claude-mem_mcp-search__search(query="$ARGUMENTS", limit=5)

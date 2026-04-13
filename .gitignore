@@ -8,9 +8,33 @@ _logs/access-log.jsonl
 _logs/conflicts.txt
 * conflicted copy*
 *.icloud
+# iCloud "X 2.{ext}" duplicates (sync collision artifacts)
+* 2.md
+* 2.txt
+* 2.json
 
 # Notes de session (peuvent contenir des infos de travail sensibles)
 _inbox/session/
+
+# Pipeline runtime staging (processed → moved to vault by nightly)
+_inbox/raw/
+
+# Runtime logs + state (regenerated each run)
+_logs/*.log
+_logs/*.log.*
+_logs/nightly.lock
+_logs/conversations-processed.json
+_logs/conversations-processed.json.bak
+_logs/seen-paper-ids.txt
+_logs/corpus-rebuild.log
+_logs/weekly-extractor.log
+
+# Local plugin/editor state (never relevant to vault content)
+.superpowers/
+.vscode/
+
+# Local working dir (never synced to repo by design)
+_work.nosync/
 
 # macOS
 .DS_Store
