@@ -1,6 +1,7 @@
 ---
 type: moc
 tag: nightly-agent
+tags: [nightly, launchd, cron, corpus]
 notes_count: 5
 last_updated: 2026-04-13
 scope: "auto-generated MOC for tag #nightly-agent"

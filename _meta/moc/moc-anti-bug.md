@@ -1,6 +1,7 @@
 ---
 type: moc
 tag: anti-bug
+tags: [bug, regression, prevention]
 notes_count: 7
 last_updated: 2026-04-13
 scope: "auto-generated MOC for tag #anti-bug"

@@ -1,6 +1,7 @@
 ---
 type: moc
 tag: gpparts
+tags: [gpparts]
 notes_count: 6
 last_updated: 2026-04-13
 scope: "auto-generated MOC for tag #gpparts"

@@ -29,8 +29,11 @@ echo "=== TOPIC: $ARGUMENTS ==="
 ```
 
 **Raisonnement Claude après Tier 1** :
-- Parse le tableau routing de `moc-index.md`
-- Match `$ARGUMENTS` vs les scopes listés
+- Parse la table compacte de `moc-index.md` (colonnes `MOC | tags | n | use_when`)
+- Match `$ARGUMENTS` :
+  1. **Tag exact** : un mot du topic apparaît dans la colonne `tags` d'un MOC → charger ce MOC
+  2. **Match sémantique use_when** : sinon, sélectionner le MOC dont `use_when` colle le mieux au topic
+  3. **Multi-MOC** : si 2 MOCs matchent (tags + use_when croisés) → charger les 2
 - Si 1-2 MOCs clairement pertinents → `cat _meta/moc/moc-{tag}.md` directement
 - Si ambigu → passer à Tier 2
 

@@ -70,8 +70,33 @@
 **Findings :**
 1. ✅ Routing Tier 1 → `moc-architecture` exact match sur "pourquoi ce choix"
 2. ✅ Réponse complète : 3 raisons (Gemini EU-bloqué, cost optim, throughput) + source citée
-3. ⚠️ **Gap MOC ↔ vault** : `architecture-paper-synthesizer.md` créée aujourd'hui mais absente du MOC car le nightly n'a pas tourné. Le Tier 1 routing aurait raté la note sans lecture directe. → besoin d'un mécanisme "regen MOC on-demand" sur création de note OU déclencher nightly partiel.
-4. ⚠️ Budget tokens 3.5× la cible spec : `moc-index.md` est lourd (470 tok à lui seul). Candidat à slim si on veut tenir 340 tok/query.
+3. ⚠️ **Gap MOC ↔ vault** : `architecture-paper-synthesizer.md` créée aujourd'hui mais absente du MOC car le nightly n'a pas tourné. Le Tier 1 routing aurait raté la note sans lecture directe. → besoin d'un mécanisme "regen MOC on-demand" sur création de note OU déclencher nightly partiel. **Reste en attente (v3 future)**.
+4. ⚠️ Budget tokens 3.5× la cible spec : `moc-index.md` est lourd (470 tok à lui seul). **Adressé en v2 (voir ci-dessous).**
+
+---
+
+## v2 — Compression moc-index + tags-list MOCs (commit 2026-04-13 21:50)
+
+**Changements :**
+- `moc-index.md` : table verbose 4-col (Scope/Notes/Quand l'utiliser) → table compacte pipe 4-col (`MOC | tags | n | use_when`)
+- 8 MOCs : ajout `tags: [list]` dans frontmatter (3-5 tags par MOC, dominant en premier)
+- `.nightly-prompt.md` : spec format compact pour cohérence multi-cycle nightly
+- `/load-moc` skill : prose alignée sur match tags + use_when (vs scopes)
+
+**Sizing post-v2 :**
+
+| Asset | v1 (B → tok) | v2 (B → tok) | Δ |
+|-------|--------------|--------------|---|
+| `moc-index.md` | 1883 → ~470 | 939 → **~234** | **-50%** |
+| `moc-architecture.md` (target MOC) | 1528 → ~382 | 1569 → ~392 | +2% (tags ajoutés) |
+| **Scenario 1 solo (index + 1 MOC)** | 1180 tok | **627 tok** | **-47%** |
+| **Scenario 2 multi (index + 2 MOCs)** | n/a | **668 tok** | — |
+
+**Routing accuracy validé sur 2 queries simulées :**
+- "Pourquoi Anthropic Batch?" → tag `architecture` + use_when "comment/pourquoi" → `moc-architecture` ✅
+- "crash nightly cron" → tags `nightly,cron` + sémantique "crash"→`bug` → `moc-anti-bug` + `moc-nightly-agent` (multi-MOC) ✅
+
+**Verdict v2 :** Cible spec "340 tok/query" toujours non atteinte (627 vs 340), mais réduction massive (-47%) sans perte de routing accuracy. Pour atteindre 340 tok il faudrait basculer vers un JIT moc-routing skill (plus lourd à designer, prévu en v3 si besoin).
 
 ### Scenario 3: Query topic inconnu (fallback Chroma)
 - **Prompt** : `/load-moc 'pattern verbose reduction'`

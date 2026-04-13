@@ -1,6 +1,7 @@
 ---
 type: moc
 tag: architecture
+tags: [architecture, patterns, pipeline]
 notes_count: 12
 last_updated: 2026-04-13
 scope: "auto-generated MOC for tag #architecture"

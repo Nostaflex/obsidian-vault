@@ -1,6 +1,7 @@
 ---
 type: moc
 tag: second-brain
+tags: [second-brain, vault, pipeline]
 notes_count: 27
 last_updated: 2026-04-13
 scope: "auto-generated MOC for tag #second-brain"
