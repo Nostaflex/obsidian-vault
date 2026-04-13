@@ -1,3 +1,10 @@
+---
+type: moc
+tag: second-brain
+notes_count: 27
+last_updated: 2026-04-13
+scope: "auto-generated MOC for tag #second-brain"
+---
 # MOC — #second-brain
 Generated: 2026-04-13 | 27 notes
 

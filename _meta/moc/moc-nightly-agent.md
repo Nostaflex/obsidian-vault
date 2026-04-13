@@ -1,3 +1,10 @@
+---
+type: moc
+tag: nightly-agent
+notes_count: 5
+last_updated: 2026-04-13
+scope: "auto-generated MOC for tag #nightly-agent"
+---
 # MOC — #nightly-agent
 Generated: 2026-04-13 | 5 notes
 

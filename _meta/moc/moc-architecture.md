@@ -1,3 +1,10 @@
+---
+type: moc
+tag: architecture
+notes_count: 12
+last_updated: 2026-04-13
+scope: "auto-generated MOC for tag #architecture"
+---
 # MOC — #architecture
 Generated: 2026-04-13 | 12 notes
 

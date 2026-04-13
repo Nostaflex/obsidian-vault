@@ -1,3 +1,10 @@
+---
+type: moc
+tag: decision
+notes_count: 7
+last_updated: 2026-04-13
+scope: "auto-generated MOC for tag #decision"
+---
 # MOC — #decision
 Generated: 2026-04-13 | 7 notes
 

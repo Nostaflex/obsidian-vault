@@ -1,3 +1,10 @@
+---
+type: moc
+tag: discovery
+notes_count: 8
+last_updated: 2026-04-13
+scope: "auto-generated MOC for tag #discovery"
+---
 # MOC — #discovery
 Generated: 2026-04-13 | 8 notes
 
