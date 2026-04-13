@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "_comment": "Auto-managed by notebooklm_weekly.py. Do not edit manually.",
+  "domains": {
+    "ai": {
+      "current": { "id": null, "source_count": 0, "created": null, "pushed_paper_ids": [] },
+      "previous": null
+    },
+    "iot": {
+      "current": { "id": null, "source_count": 0, "created": null, "pushed_paper_ids": [] },
+      "previous": null
+    },
+    "cloud": {
+      "current": { "id": null, "source_count": 0, "created": null, "pushed_paper_ids": [] },
+      "previous": null
+    },
+    "ecommerce": {
+      "current": { "id": null, "source_count": 0, "created": null, "pushed_paper_ids": [] },
+      "previous": null
+    }
+  }
+}

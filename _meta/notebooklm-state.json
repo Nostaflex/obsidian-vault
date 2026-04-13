@@ -1,0 +1,23 @@
+{
+  "_comment": "Auto-managed by /notebooklm-weekly skill. Do not edit manually.",
+  "schema_version": "1.0",
+  "notebooks": {
+    "ai": null,
+    "iot": null,
+    "cloud": null,
+    "ecommerce": null
+  },
+  "last_sync": {
+    "ai": null,
+    "iot": null,
+    "cloud": null,
+    "ecommerce": null
+  },
+  "pushed_papers": {
+    "ai": [],
+    "iot": [],
+    "cloud": [],
+    "ecommerce": []
+  },
+  "custom_topics": {}
+}

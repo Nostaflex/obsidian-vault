@@ -29,3 +29,5 @@ Le flag `orderPlaced` doit être vrai AVANT toute mutation d'état global.
 ## Liens
 
 _(voir aussi : anti-bug-nesting-a-button — note à créer)_
+- [[discovery-facture-electronique-fr-2026]]
+- [[nextjs-15-breaking-changes-cache]]
