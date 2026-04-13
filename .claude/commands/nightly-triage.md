@@ -31,14 +31,17 @@ echo "=== ALERTES ACTIVES ==="
 grep -E "^(#{1,3})\s*(ALERT|🚨|⚠️)" _logs/maintenance-report.md 2>/dev/null | head -10
 
 # 4. Broken wikilinks — count + exemples
+# Fix I4 PR#2 review : fallback echo 0 si fichier absent (évite "integer expression expected")
 echo "=== BROKEN WIKILINKS ==="
 BROKEN_COUNT=$(wc -l <_logs/broken-links.txt 2>/dev/null | tr -d ' ')
+BROKEN_COUNT=${BROKEN_COUNT:-0}
 echo "Count: $BROKEN_COUNT"
 [ "$BROKEN_COUNT" -gt "0" ] && head -5 _logs/broken-links.txt
 
 # 5. iCloud conflicts
 echo "=== ICLOUD CONFLICTS ==="
 CONFLICTS_COUNT=$(wc -l <_logs/conflicts.txt 2>/dev/null | tr -d ' ')
+CONFLICTS_COUNT=${CONFLICTS_COUNT:-0}
 echo "Count: $CONFLICTS_COUNT"
 [ "$CONFLICTS_COUNT" -gt "0" ] && head -3 _logs/conflicts.txt
 

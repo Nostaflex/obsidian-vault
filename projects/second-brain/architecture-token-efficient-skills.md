@@ -123,23 +123,25 @@ grep -E 'pattern' source.md | head -N
 
 ### `/resume-session`
 - **Budget cible** : ~400 tokens
-- **Output réel mesuré** : ~650 bytes ≈ 300 tokens
-- **Économie vs manuel** : 2000 → 300 tokens (85%)
+- **Output réel mesuré** : ~650 bytes ≈ 200 tokens (ratio ~3.25 chars/token en français/UTF-8)
+- **Économie vs manuel** : 2000 → 200 tokens (**90%**)
 - **Sources** : git log, git status count, jq last-nightly, jq nlm-status, grep tech-debt, find -mtime
 
 ### `/nightly-triage`
 - **Budget cible** : ~500 tokens
-- **Output réel mesuré** : ~1100 bytes ≈ 400 tokens
-- **Économie vs manuel** : 1500 → 400 tokens (73%)
+- **Output réel mesuré** : ~1100 bytes ≈ 340 tokens
+- **Économie vs manuel** : 1500 → 340 tokens (**77%**)
 - **Sources** : jq last-nightly, jq nlm-status, grep maintenance-report, wc broken-links, tail nightly-agent.log
 
 ### `/sprint-task-tracker`
 - **Budget cible** : ~400 tokens
-- **Output réel mesuré** : ~800 bytes ≈ 300 tokens
-- **Économie vs manuel** : 1000 → 300 tokens (70%)
+- **Output réel mesuré** : ~800 bytes ≈ 250 tokens
+- **Économie vs manuel** : 1000 → 250 tokens (**75%**)
 - **Sources** : ls plans, grep task-ids, git log --grep, git log non-tagged
 
-**Total économie quotidienne** : ~3500 tokens (si les 3 skills sont utilisés 1×/jour chacun).
+**Total économie quotidienne** : ~3700 tokens (si les 3 skills sont utilisés 1×/jour chacun).
+
+**Note méthodologique** : ratio bytes→tokens estimé à ~3.25 chars/token pour le français en UTF-8 (vs ~4 pour anglais ASCII). Pour mesure exacte, utiliser `tiktoken` ou `anthropic.count_tokens()`.
 
 ## Traps à éviter
 

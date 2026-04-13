@@ -33,8 +33,13 @@ echo "=== NLM ==="
 jq '.' _logs/nlm-status.json 2>/dev/null || echo "no NLM status"
 
 # 4. Tech-debt critiques/hautes ouvertes (grep ciblé dans registry)
+# Fix B3 PR#2 review : fallback gracieux si registry absent (PR#1 pas encore mergée)
 echo "=== TECH-DEBT OUVERTES (critique/haute) ==="
-grep -E "^### TD-2026-[0-9]+.*(CRITIQUE|HAUTE)" projects/second-brain/tech-debt-registry.md 2>/dev/null | grep -v "✅\|❌" | head -5
+if [ -f projects/second-brain/tech-debt-registry.md ]; then
+  grep -E "^### TD-2026-[0-9]+.*(CRITIQUE|HAUTE)" projects/second-brain/tech-debt-registry.md 2>/dev/null | grep -v "✅\|❌" | head -5
+else
+  echo "(tech-debt-registry absent — voir PR #1 pour création)"
+fi
 
 # 5. Notes créées/modifiées dans les 2 derniers jours (titre uniquement, pas contenu)
 # NOTE : find|sed|head (pas xargs — évite signal 13 sur SIGPIPE)
