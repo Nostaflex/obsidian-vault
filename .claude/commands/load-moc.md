@@ -1,6 +1,6 @@
 ---
 description: Charge le MOC pertinent pour un topic — retrieval 2-tiers (LLM-routing puis embeddings fallback) ~350 tokens moyen
-allowed-tools: Bash(cat:*), Bash(grep:*), Bash(head:*), Bash(ls:*), Bash(wc:*)
+allowed-tools: Bash(cat:*), Bash(grep:*), Bash(head:*), Bash(ls:*), Bash(wc:*), Bash(python3:*)
 argument-hint: "<topic> — ex: 'bash vs python', 'crash nightly', 'security audit'"
 ---
 
@@ -14,12 +14,24 @@ argument-hint: "<topic> — ex: 'bash vs python', 'crash nightly', 'security aud
 2. **NE PAS** lire de notes individuelles tant que Tier 1 n'a pas sélectionné un MOC
 3. **NE PAS** dump de contenu — sortie = citations wikilinks précises
 
-## Tier 1 — LLM-as-retriever (80-90% cas, ~330 tokens)
+## Tier 0 — Freshness check (gratuit, ~50ms, ~30-150 tok)
 
 ```bash
 cd /Users/djemildavid/Documents/Obsidian/KnowledgeBase
 
-# 1. Read moc-index (le routeur)
+# Détecte les notes ajoutées depuis la dernière régen MOC
+# (gap entre 2 nightly cron). Sortie vide = MOCs frais, on continue.
+echo "=== FRESHNESS CHECK ==="
+python3 moc_freshness.py 2>&1 || true
+```
+
+**Si stale notes affichées** : Claude doit les considérer comme candidates
+au routing au même titre que les notes listées dans les MOCs (Tier 1).
+
+## Tier 1 — LLM-as-retriever (80-90% cas, ~330 tokens)
+
+```bash
+# 1. Read moc-index (le routeur compact)
 echo "=== MOC INDEX ==="
 cat _meta/moc/moc-index.md
 
