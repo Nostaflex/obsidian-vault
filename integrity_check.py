@@ -26,6 +26,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -145,13 +146,28 @@ def list_active_notes(vault: Path) -> list[Path]:
 
 
 def detect_icloud_conflicts(vault: Path) -> list[Path]:
-    """Find iCloud sync conflict files (pattern: '* conflicted copy*')."""
+    """Find iCloud sync conflict files (pattern: '* conflicted copy*').
+
+    Scope restreint (fix B3 PR#1 review) :
+    - Scanne uniquement les dossiers utilisateurs (ACTIVE_ROOTS + _meta + _inbox)
+    - Exclut .git, _work.nosync (secrets), .obsidian, _logs, _archive, node_modules
+    - Évite leak vers _logs/conflicts.txt + perf walk inutile sur .git
+    """
     if not vault.exists():
         return []
+    scan_roots = list(ACTIVE_ROOTS) + ["_meta", "_inbox"]
+    excluded_dirs = {".git", "_work.nosync", ".obsidian", "_archive", "_processed", "node_modules", "sensitive.nosync"}
     conflicts: list[Path] = []
-    for path in vault.rglob("*"):
-        if path.is_file() and "conflicted copy" in path.name:
-            conflicts.append(path)
+    for root_name in scan_roots:
+        root = vault / root_name
+        if not root.exists():
+            continue
+        for path in root.rglob("*"):
+            # Skip if any path component is in excluded_dirs
+            if any(part in excluded_dirs for part in path.parts):
+                continue
+            if path.is_file() and "conflicted copy" in path.name:
+                conflicts.append(path)
     return sorted(conflicts)
 
 
@@ -247,8 +263,17 @@ def restore_status_after_crash(log_path: Path) -> None:
     """Update last-nightly.json status to 'restored_after_crash'.
 
     Atomic write via NamedTemporaryFile + os.replace (fix TD-017 race condition).
+    Robust to missing file or corrupted JSON (fix B1 from PR#1 review):
+    - FileNotFoundError → start with empty dict (vault was never run before)
+    - JSONDecodeError → start with empty dict + log warning (avoid restore loop)
     """
-    data = json.loads(log_path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(log_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        data = {}
+    except json.JSONDecodeError as e:
+        print(f"⚠️  last-nightly.json corrupted ({e}) — recreating with restored status", file=sys.stderr)
+        data = {}
     data["status"] = "restored_after_crash"
 
     # Atomic write : tempfile dans le même dossier pour os.replace atomique
@@ -280,8 +305,9 @@ def download_icloud(vault: Path) -> bool:
 
     Returns True if brctl available and ran (regardless of success).
     Returns False if brctl not found (non-macOS).
+    Fix B4 PR#1 review: shutil.which is portable + faster than `which` subprocess.
     """
-    if subprocess.run(["which", "brctl"], capture_output=True).returncode != 0:
+    if not shutil.which("brctl"):
         return False
     subprocess.run(
         ["brctl", "download", str(vault)],
@@ -295,10 +321,13 @@ def check_work_nosync_sync(vault: Path) -> bool:
     """Check if _work.nosync is being synced by iCloud (should NOT be).
 
     Returns True if sync detected (= PROBLEM), False otherwise.
+    Fix B4 PR#1 review: guard brctl availability (Linux compat — was crashing FileNotFoundError).
     """
     work_nosync = vault / "_work.nosync"
     if not work_nosync.exists():
         return False
+    if not shutil.which("brctl"):
+        return False  # non-macOS: assume no iCloud sync
     result = subprocess.run(
         ["brctl", "status", str(work_nosync)],
         capture_output=True,
@@ -444,6 +473,9 @@ def main(argv: list[str] | None = None) -> int:
     index_tmp.write_text(index_content, encoding="utf-8")
     note_count = len(list_active_notes(vault))
     print(f"✓ INDEX.md reconstruit ({note_count} notes) → {index_tmp}")
+    # Fix B2 PR#1 review : warning si le plafond est dépassé
+    if note_count > INDEX_CEILING:
+        print(f"⚠️  Plafond INDEX_CEILING ({INDEX_CEILING}) dépassé : {note_count} notes — envisager archivage")
 
     # Step 5. Broken wikilinks
     broken = find_broken_wikilinks(vault)

@@ -9,6 +9,7 @@ Couvre :
 """
 
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -77,10 +78,11 @@ class TestParseFrontmatter:
         assert parse_frontmatter(content) == {}
 
     def test_malformed_frontmatter_returns_empty_dict(self):
-        content = "---\nnot: valid: yaml: at: all\n---"
-        # ne lève pas d'exception, retourne {} sur erreur
+        # Fix I7 PR#1 review : utilise un YAML vraiment malformed
+        # (l'ancien "not: valid: yaml: at: all" était en fait valide en YAML flow mapping)
+        content = "---\n[unclosed bracket\n---"
         result = parse_frontmatter(content)
-        assert isinstance(result, dict)
+        assert result == {}, f"Expected empty dict on malformed YAML, got {result}"
 
 
 class TestExtractTitle:
@@ -294,3 +296,90 @@ class TestRestoreStatusAfterCrash:
         # Aucun fichier .tmp ne traîne dans _logs/
         leaked = list((tmp_vault / "_logs").glob("*.tmp"))
         assert leaked == []
+
+    def test_handles_missing_file(self, tmp_vault):
+        # Fix B1 PR#1 review : restore robuste si le fichier n'existe pas
+        log_path = tmp_vault / "_logs" / "missing.json"
+        # Doit créer le fichier sans crasher
+        restore_status_after_crash(log_path)
+        result = json.loads(log_path.read_text())
+        assert result == {"status": "restored_after_crash"}
+
+    def test_handles_corrupted_json(self, tmp_vault):
+        # Fix B1 PR#1 review : restore robuste si JSON corrompu (évite restore loop)
+        log_path = tmp_vault / "_logs" / "last-nightly.json"
+        log_path.write_text("{not valid json {{{")
+        restore_status_after_crash(log_path)
+        result = json.loads(log_path.read_text())
+        assert result["status"] == "restored_after_crash"
+
+
+# ============================================================================
+# Couche 3 — Subprocess wrappers (I9 PR#1 review : tests via mock)
+# ============================================================================
+
+
+class TestSubprocessWrappers:
+    """Tests pour download_icloud, check_work_nosync_sync, backup_vault, restore_from_backup.
+
+    Mock subprocess.run + shutil.which pour tester sans dépendre de brctl/rsync réels.
+    """
+
+    def test_download_icloud_returns_false_when_brctl_missing(self, monkeypatch, tmp_vault):
+        from integrity_check import download_icloud
+        monkeypatch.setattr("shutil.which", lambda cmd: None)
+        assert download_icloud(tmp_vault) is False
+
+    def test_download_icloud_calls_brctl_when_available(self, monkeypatch, tmp_vault):
+        from integrity_check import download_icloud
+        called = []
+        monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/brctl")
+        monkeypatch.setattr(
+            "subprocess.run",
+            lambda *args, **kwargs: called.append(args[0]) or subprocess.CompletedProcess(args[0], 0),
+        )
+        assert download_icloud(tmp_vault) is True
+        assert called[0][:2] == ["brctl", "download"]
+
+    def test_check_work_nosync_sync_no_dir(self, tmp_vault):
+        from integrity_check import check_work_nosync_sync
+        # _work.nosync est créé par fixture mais on le supprime pour ce test
+        import shutil as sh
+        sh.rmtree(tmp_vault / "_work.nosync")
+        assert check_work_nosync_sync(tmp_vault) is False
+
+    def test_check_work_nosync_sync_no_brctl(self, monkeypatch, tmp_vault):
+        from integrity_check import check_work_nosync_sync
+        monkeypatch.setattr("shutil.which", lambda cmd: None)
+        # Doit retourner False (pas crasher) sur Linux/non-macOS
+        assert check_work_nosync_sync(tmp_vault) is False
+
+    def test_check_work_nosync_sync_detects_uploading(self, monkeypatch, tmp_vault):
+        from integrity_check import check_work_nosync_sync
+        monkeypatch.setattr("shutil.which", lambda cmd: "/usr/bin/brctl")
+        monkeypatch.setattr(
+            "subprocess.run",
+            lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 0, stdout="status: uploading\n", stderr=""),
+        )
+        assert check_work_nosync_sync(tmp_vault) is True
+
+    def test_backup_vault_strict_raises_on_failure(self, monkeypatch, tmp_vault):
+        from integrity_check import backup_vault
+        monkeypatch.setattr(
+            "subprocess.run",
+            lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 1, stdout=b"", stderr=b"rsync: error"),
+        )
+        with pytest.raises(RuntimeError, match="rsync backup failed"):
+            backup_vault(tmp_vault, tmp_vault.parent / "backup", strict=True)
+
+    def test_backup_vault_best_effort_returns_false_on_failure(self, monkeypatch, tmp_vault, capsys):
+        from integrity_check import backup_vault
+        monkeypatch.setattr(
+            "subprocess.run",
+            lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 1, stdout=b"", stderr=b"rsync: error"),
+        )
+        result = backup_vault(tmp_vault, tmp_vault.parent / "backup", strict=False)
+        assert result is False
+        # Warning émis sur stderr
+        captured = capsys.readouterr()
+        assert "rsync backup failed" in captured.err
