@@ -1,8 +1,8 @@
 # MOC — #nightly-agent
-Generated: 2026-04-12 | 5 notes
+Generated: 2026-04-13 | 5 notes
 
-- [[discovery-nightly-agent-architecture]] — pipeline 6 étapes, launchd 2h17, budget 35k tokens
-- [[discovery-nightly-vault-api-transit]] — contenu vault transite vers Anthropic à chaque run
-- [[guardrail-nightly-prompt]] — règles absolues nightly prompt non annulables
-- [[convention-log-anti-re-ingestion]] — LOG.md append-only, empêche double-ingestion
-- [[feature-enrichment-pipeline-approach-b]] — enrichissement ciblé depuis watchlist, 7 tasks PR#5
+- [[convention-log-anti-re-ingestion]] — LOG.md append-only empêche re-ingestion fichiers déjà traités
+- [[discovery-mcp-tools-print-mode]] — claude --print n'initialise pas plugins, MCP inaccessibles nightly
+- [[discovery-nightly-agent-architecture]] — launchd 2h17 integrity-check puis claude --print Light Mode
+- [[discovery-nightly-vault-api-transit]] — Contenu vault transite API Anthropic protection repose sur prompt
+- [[guardrail-nightly-prompt]] — Règle non-annulable _work.nosync textuelle, risque résiduel documenté

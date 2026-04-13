@@ -1,9 +1,10 @@
 # MOC — #decision
-Generated: 2026-04-12 | 6 notes
+Generated: 2026-04-13 | 7 notes
 
-- [[decision-architecture-hybride-second-brain]] — algo pour structure, LLM pour sémantique
-- [[decision-knowledge-graph-deferred]] — knowledge graph Karpathy différé, pas prioritaire
-- [[decision-mind-free-kit-first-strategy]] — kit autodéployé, zéro infrastructure, anonymat employeur
-- [[decision-vault-seed-runtime-pattern]] — seed versionné séparé du runtime utilisateur
-- [[decision-weekly-extractor-approach-c]] — session interactive requise pour accès MCP claude-mem
-- [[feature-enrichment-pipeline-approach-b]] — enrichissement ciblé depuis watchlist, 7 tasks PR#5
+- [[decision-architecture-hybride-second-brain]] — Hybride Algo+LLM injection directe vault trois guardrails prompt
+- [[decision-bash-vs-python-boundary]] — Mix bash 250 LOC Python 1860 LOC conservé, integrity seul à migrer
+- [[decision-knowledge-graph-deferred]] — Knowledge graph différé, wikilinks suffisent avant 100 notes actives
+- [[decision-mind-free-kit-first-strategy]] — Kit autodéployé Gumroad vente unique sans infrastructure SaaS
+- [[decision-vault-seed-runtime-pattern]] — vault/ seed source de vérité, runtime dynamique jamais versionné
+- [[decision-weekly-extractor-approach-c]] — Session interactive MCP, pas HTTP ni corpus rebuild non-interactif
+- [[feature-enrichment-pipeline-approach-b]] — Approche B watchlist corpus sans scraping web PR#5 mergé

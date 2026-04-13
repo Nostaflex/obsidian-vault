@@ -1,30 +1,30 @@
 # MOC — #second-brain
-Generated: 2026-04-12 | 27 notes
+Generated: 2026-04-13 | 27 notes
 
-- [[anti-bug-claude-cli-keychain-launchd]] — session Aqua requise pour keychain depuis launchd
-- [[anti-bug-claude-jsonl-schema]] — schéma JSONL claude différent de la doc officielle
-- [[anti-bug-grep-confidentiel-faux-positif]] — grep sur mot clé dans titre H1 donne faux positif
-- [[anti-bug-launchd-icloud-tcc]] — LimitLoadToSessionType Aqua résout le blocage TCC
-- [[anti-bug-mcp-server-scoped-vscode-only]] — MCP dans settings.json = VS Code seulement, pas global
-- [[architecture-dual-profile-vscode]] — séparation profils VSCode pour privacy employeur
-- [[convention-log-anti-re-ingestion]] — LOG.md ne jamais effacer, empêche double-ingestion
-- [[decision-architecture-hybride-second-brain]] — algo pour structure, LLM pour sémantique
-- [[decision-knowledge-graph-deferred]] — knowledge graph Karpathy différé, pas prioritaire
-- [[decision-mind-free-kit-first-strategy]] — kit autodéployé, zéro infrastructure, anonymat employeur
-- [[decision-vault-seed-runtime-pattern]] — seed versionné séparé du runtime utilisateur
-- [[decision-weekly-extractor-approach-c]] — session interactive requise pour accès MCP claude-mem
-- [[discovery-claude-mem-architecture]] — ChromaDB + SQLite + HTTP worker local, zero cloud
-- [[discovery-claude-mem-privacy-risk]] — observations claude-mem traversent projets sans isolation
-- [[discovery-mcp-tools-print-mode]] — claude --print n'initialise pas MCP, bloque claude-mem
-- [[discovery-nightly-agent-architecture]] — pipeline 6 étapes, launchd 2h17, budget 35k tokens
-- [[discovery-nightly-vault-api-transit]] — contenu vault transite vers Anthropic à chaque run
-- [[discovery-second-brain-v4-gaps-fixes]] — 5 gaps audit Karpathy corrigés en v4
-- [[discovery-vault-failles-audit]] — 4 failles structurelles audit v4
-- [[feature-enrichment-pipeline-approach-b]] — enrichissement ciblé depuis watchlist, 7 tasks PR#5
-- [[feature-weekly-extractor-first-run]] — PR#4 mergé, 350+ obs traitées, 14 filtrées privacy
-- [[guardrail-nightly-prompt]] — règles absolues nightly prompt non annulables
-- [[icloud-work-nosync-protection]] — double protection iCloud + gitignore pour données sensibles
-- [[pattern-inbox-raw-layer]] — zone entrée raw découplée du vault compilé
-- [[concept-collectors-fallacy-accumulation-passive]] — accumuler ≠ comprendre, mesurer le taux d'assimilation
-- [[concept-cognitive-mitosis-atomicity]] — test fonction pure : note compréhensible sans ses sœurs
-- [[concept-context-preservation-after-mitosis]] — lien nu = contexte perdu, annotation encode le pont sémantique
+- [[anti-bug-claude-cli-keychain-launchd]] — Keychain verrouillé hors session empêche auth Claude launchd
+- [[anti-bug-claude-jsonl-schema]] — Contenu messages dans d['message']['content'] pas d['content']
+- [[anti-bug-grep-confidentiel-faux-positif]] — grep confidentiel matche titres H1, exclure lignes hash
+- [[anti-bug-launchd-icloud-tcc]] — LimitLoadToSessionType Aqua résout accès iCloud et keychain
+- [[anti-bug-mcp-server-scoped-vscode-only]] — Serveurs MCP settings.json invisibles aux scripts launchd
+- [[architecture-dual-profile-vscode]] — Deux profils VSCode séparent données Personal et Work Renault
+- [[convention-log-anti-re-ingestion]] — LOG.md append-only empêche re-ingestion fichiers déjà traités
+- [[decision-architecture-hybride-second-brain]] — Architecture hybride Algo+LLM injection directe trois guardrails
+- [[decision-knowledge-graph-deferred]] — Knowledge graph différé, wikilinks suffisent avant 100 notes actives
+- [[decision-mind-free-kit-first-strategy]] — Kit autodéployé Gumroad vente unique sans infrastructure SaaS
+- [[decision-vault-seed-runtime-pattern]] — vault/ seed source de vérité, runtime dynamique jamais versionné
+- [[decision-weekly-extractor-approach-c]] — Weekly extractor session interactive MCP, pas mode non-interactif
+- [[discovery-claude-mem-architecture]] — claude-mem SQLite ChromaDB local, daemon HTTP, offline sans API
+- [[discovery-claude-mem-privacy-risk]] — Observations non compartimentées exposent données sessions Work
+- [[discovery-mcp-tools-print-mode]] — claude --print n'initialise pas plugins, MCP inaccessibles nightly
+- [[discovery-nightly-agent-architecture]] — launchd 2h17 integrity-check puis claude --print Light Mode
+- [[discovery-nightly-vault-api-transit]] — Contenu vault transite API Anthropic, protection repose sur prompt
+- [[discovery-second-brain-v4-gaps-fixes]] — Cinq gaps Karpathy v3 tous corrigés dans v4 PR#6 validé
+- [[discovery-vault-failles-audit]] — Quatre failles structurelles vault gaps implémentation identifiés
+- [[feature-enrichment-pipeline-approach-b]] — Approche B watchlist corpus sans scraping web PR#5 mergé
+- [[feature-weekly-extractor-first-run]] — Premier run 45 concepts extraits sur 350 observations traitées
+- [[guardrail-nightly-prompt]] — Guardrail _work.nosync textuel non-annulable par notes inbox
+- [[icloud-work-nosync-protection]] — Double protection .nosync xattr empêche sync iCloud données sensibles
+- [[pattern-inbox-raw-layer]] — Zone _inbox/raw/ sources externes ingérées automatiquement notes atomiques
+- [[concept-cognitive-mitosis-atomicity]] — Mitose cognitive produit N notes indépendantes test fonction pure
+- [[concept-collectors-fallacy-accumulation-passive]] — Accumulation imite compréhension sans la produire piège systémique
+- [[concept-context-preservation-after-mitosis]] — Annotations liens obligatoires préservent contexte après mitose
