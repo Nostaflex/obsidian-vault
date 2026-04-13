@@ -1,14 +1,23 @@
+---
+type: moc
+tag: architecture
+tags: [architecture, patterns, pipeline]
+notes_count: 12
+last_updated: 2026-04-13
+scope: "auto-generated MOC for tag #architecture"
+---
 # MOC — #architecture
-Generated: 2026-04-12 | 11 notes
+Generated: 2026-04-13 | 12 notes
 
-- [[decision-architecture-hybride-second-brain]] — algo pour structure, LLM pour sémantique
-- [[decision-knowledge-graph-deferred]] — knowledge graph Karpathy différé, pas prioritaire
-- [[decision-vault-seed-runtime-pattern]] — seed versionné séparé du runtime utilisateur
-- [[discovery-claude-mem-architecture]] — ChromaDB + SQLite + HTTP worker local, zero cloud
-- [[discovery-nightly-agent-architecture]] — pipeline 6 étapes, launchd 2h17, budget 35k tokens
-- [[discovery-second-brain-v4-gaps-fixes]] — 5 gaps audit Karpathy corrigés en v4
-- [[discovery-vault-failles-audit]] — 4 failles structurelles audit v4
-- [[feature-enrichment-pipeline-approach-b]] — enrichissement ciblé depuis watchlist, 7 tasks PR#5
-- [[architecture-dual-profile-vscode]] — séparation profils VSCode pour privacy employeur
-- [[decision-mind-free-kit-first-strategy]] — kit autodéployé, zéro infrastructure, anonymat employeur
-- [[pattern-inbox-raw-layer]] — zone entrée raw découplée du vault compilé
+- [[architecture-dual-profile-vscode]] — Deux profils VSCode séparent données Personal et Work Renault
+- [[decision-architecture-hybride-second-brain]] — Hybride Algo+LLM injection directe vault trois guardrails prompt
+- [[decision-bash-vs-python-boundary]] — Mix bash 250 LOC Python 1860 LOC conservé, seul integrity migrer
+- [[decision-knowledge-graph-deferred]] — Knowledge graph différé, wikilinks Obsidian suffisent avant 100 notes
+- [[decision-vault-seed-runtime-pattern]] — vault/ seed source de vérité, runtime dynamique jamais versionné
+- [[decision-weekly-extractor-approach-c]] — Session interactive MCP dictée par contrainte --print sans plugins
+- [[discovery-claude-mem-architecture]] — claude-mem SQLite ChromaDB local daemon HTTP offline sans cloud
+- [[discovery-nightly-agent-architecture]] — launchd nightly workflow complet integrity-check puis claude --print
+- [[discovery-second-brain-v4-gaps-fixes]] — Cinq gaps Karpathy v3 tous corrigés dans v4, 25 notes actives
+- [[discovery-vault-failles-audit]] — Quatre failles structurelles vault gaps implémentation identifiés
+- [[feature-enrichment-pipeline-approach-b]] — Pipeline enrichissement Approche B watchlist corpus PR#5 validé
+- [[pattern-inbox-raw-layer]] — Couche _inbox/raw/ séparation raw input wiki compilé schéma structuré
