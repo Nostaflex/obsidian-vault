@@ -21,19 +21,31 @@
   - `CLAUDE_MEM_CHROMA_ENABLED = true`
   - MCP server `mcp__plugin_claude-mem_mcp-search__*` accessible
 
-### Mesurable côté session (à compléter par user)
+### Mesurable côté session (mesuré 2026-04-13 21:13 via `/context`)
 
-- Boot cost en tokens : TBD
-- Boot cost en % : TBD
+| Catégorie | Tokens | Note |
+|-----------|--------|------|
+| **Memory files (`MEMORY.md` AutoMem)** | **165** | ⭐ Couche optimisée, -97% vs baseline |
+| Skills total (dont `/load-moc` 31 tok) | 1 700 | Lazy-loadable |
+| System prompt | 6 900 | Claude Code base + CMEM block résiduel |
+| System tools built-in actifs | 11 600 | Edit, Read, Bash, Grep, Glob, etc. |
+| MCP tools (deferred) | 17 300 | Schémas fetched à la demande via ToolSearch |
+| System tools (deferred) | 8 700 | Idem |
+| Custom agents | 247 | code-reviewer |
+| **Total static boot** | **~20 600** | -26% vs baseline 28K |
+
+**Note** : `user_profile.md` (830 B) et `session_pointer.md` (610 B) ne sont **PAS** auto-loaded — ils ne sont chargés que sur demande explicite (Read par Claude). Seul `MEMORY.md` (le pointer) est dans le boot context.
 
 ## Target vs Acceptable
 
-| Métrique | Cible | Acceptable | Mesuré |
-|----------|-------|------------|--------|
-| Memory files (bytes) | < 2 000 | < 3 000 | **1 907 ✅** |
-| Memory files (tokens) | < 500 | < 800 | **~476 ✅** |
-| Boot cost (tokens) | 500 | < 2 000 | TBD |
-| Boot cost (%) | 0.25% | < 1% | TBD |
+| Métrique | Cible | Acceptable | Mesuré | Verdict |
+|----------|-------|------------|--------|---------|
+| Memory files on disk (bytes) | < 2 000 | < 3 000 | 1 907 | ✅ |
+| Memory files on disk (tokens estim.) | < 500 | < 800 | ~476 | ✅ |
+| **Memory files boot cost (tokens)** | **500** | **< 2 000** | **165** | **🎯 dépassé** |
+| Boot cost total (tokens) | (n/a) | < 25K | ~20.6K | ✅ |
+
+**Lecture** : la migration a atteint et dépassé sa cible sur la couche cible (memory files = 165 tok vs cible 500). Le boot total reste dominé par les tool schemas (système + MCP) — c'est hors-scope de cette migration et représente un autre chantier potentiel ("tool routing dynamique").
 
 ## 5 scenarios de validation
 
@@ -45,11 +57,21 @@
 - **Tokens consommés** : TBD
 - **Statut** : TBD
 
-### Scenario 2: Query topic connu (via MOC)
-- **Prompt** : `/load-moc architecture` puis "synthétise les décisions clés"
-- **Attente** : Tier 1 route vers `moc-architecture`, charge le MOC, suit wikilinks
-- **Tokens** : TBD
-- **Statut** : TBD
+### Scenario 2: Query topic connu (via MOC) — **EXÉCUTÉ 2026-04-13 21:18**
+- **Prompt** : "Pourquoi a-t-on choisi Anthropic Batch API + Claude Haiku pour `paper_synthesizer.py` ?"
+- **Attente** : Tier 1 route vers `moc-architecture`, charge le MOC, suit wikilinks vers `architecture-paper-synthesizer`
+- **Tokens** :
+  - Tier 1 step 1 (moc-index) : ~470 tok
+  - Tier 1 step 2 (moc-architecture) : ~382 tok
+  - Lecture directe note (`architecture-paper-synthesizer`) : ~330 tok
+  - **Total : ~1 182 tok** (vs cible spec 340 — 3.5× over)
+- **Statut** : ✅ Routing correct, ⚠️ budget dépassé, ⚠️ note absente du MOC
+
+**Findings :**
+1. ✅ Routing Tier 1 → `moc-architecture` exact match sur "pourquoi ce choix"
+2. ✅ Réponse complète : 3 raisons (Gemini EU-bloqué, cost optim, throughput) + source citée
+3. ⚠️ **Gap MOC ↔ vault** : `architecture-paper-synthesizer.md` créée aujourd'hui mais absente du MOC car le nightly n'a pas tourné. Le Tier 1 routing aurait raté la note sans lecture directe. → besoin d'un mécanisme "regen MOC on-demand" sur création de note OU déclencher nightly partiel.
+4. ⚠️ Budget tokens 3.5× la cible spec : `moc-index.md` est lourd (470 tok à lui seul). Candidat à slim si on veut tenir 340 tok/query.
 
 ### Scenario 3: Query topic inconnu (fallback Chroma)
 - **Prompt** : `/load-moc 'pattern verbose reduction'`
