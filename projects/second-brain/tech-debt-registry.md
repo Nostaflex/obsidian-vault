@@ -143,15 +143,19 @@ type: registry
 **Approche** : désactivation via `enabledPlugins: false` (réversible). Cache disque conservé — peut être purgé plus tard si besoin.
 **Plugins gardés actifs** : `superpowers`, `claude-mem`, `context7`. Plugin `github` reste désactivé user-level mais activé project-level via `enabledMcpjsonServers`.
 
-### TD-2026-008 — Redondance plan/execute claude-mem vs superpowers
+### TD-2026-008 — Redondance plan/execute claude-mem vs superpowers ✅
 **Sévérité** : 🟡 MOYENNE (confusion workflow)
 **Découvert** : 2026-04-13 (audit Opus)
-**Statut** : `open`
+**Statut** : `resolved` — 2026-04-14
 **Détail** : Deux axes concurrents :
 - `claude-mem:make-plan` + `claude-mem:do`
 - `superpowers:writing-plans` + `superpowers:executing-plans`
 Philosophies divergentes (orchestrator-subagent vs plan TDD).
-**Action** : Choisir un axe et désactiver l'autre.
+**Décision** : **superpowers** retenu, `claude-mem:make-plan` + `claude-mem:do` écartés. Les autres skills claude-mem (mem-search, timeline-report, knowledge-agent, smart-explore, version-bump) restent actifs.
+**Rationale** : Le pipeline superpowers est déjà embedded dans le workflow (worktrees, TDD, branch-per-feature, `docs/superpowers/specs/` déjà utilisé, skills `using-git-worktrees` + `test-driven-development` + `verification-before-completion` déjà actifs).
+**Implémentation** :
+- Feedback memory `~/.claude/projects/.../memory/feedback_plan-exec-tooling.md` (règle explicite chargée chaque session)
+- Hard deny via `~/.claude/settings.json` : `permissions.deny: ["Skill(claude-mem:make-plan)", "Skill(claude-mem:do)"]`
 
 ### TD-2026-009 — Log rotation manuelle nightly-agent
 **Sévérité** : 🟡 MOYENNE (dette opérationnelle)
