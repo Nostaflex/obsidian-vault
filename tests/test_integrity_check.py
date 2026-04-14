@@ -268,6 +268,43 @@ class TestFindBrokenWikilinks:
         _write_note(tmp_vault / "universal" / "ref.md", "Ref", body="Voir [[note-Y|Mon alias]]")
         assert find_broken_wikilinks(tmp_vault) == []
 
+    def test_lint_ignore_filters_false_positives(self, tmp_vault):
+        # Les wikilinks illustratifs (dans prose ou exemples) vivent dans
+        # _meta/lint-ignore.txt. integrity_check doit les exclure de broken-links.txt
+        # pour éviter le bruit.
+        (tmp_vault / "_meta").mkdir(parents=True, exist_ok=True)
+        (tmp_vault / "_meta" / "lint-ignore.txt").write_text(
+            "# Illustratifs à ignorer\nexample-link\nwikilinks\n",
+            encoding="utf-8",
+        )
+        _write_note(
+            tmp_vault / "universal" / "doc.md",
+            "Doc",
+            body="Syntaxe: [[example-link]] et aussi [[wikilinks]] et [[real-missing]]",
+        )
+        result = find_broken_wikilinks(tmp_vault)
+        assert "example-link" not in result
+        assert "wikilinks" not in result
+        assert "real-missing" in result
+
+    def test_lint_ignore_missing_file_does_not_crash(self, tmp_vault):
+        # Si _meta/lint-ignore.txt absent, comportement par défaut (tout report)
+        _write_note(tmp_vault / "universal" / "note-A.md", "Note A", body="[[missing]]")
+        result = find_broken_wikilinks(tmp_vault)
+        assert "missing" in result
+
+    def test_lint_ignore_ignores_comments_and_blanks(self, tmp_vault):
+        (tmp_vault / "_meta").mkdir(parents=True, exist_ok=True)
+        (tmp_vault / "_meta" / "lint-ignore.txt").write_text(
+            "# comment\n\nok-link\n  \n# another comment\n",
+            encoding="utf-8",
+        )
+        _write_note(tmp_vault / "universal" / "doc.md", "Doc",
+                    body="[[ok-link]] and [[other-missing]]")
+        result = find_broken_wikilinks(tmp_vault)
+        assert "ok-link" not in result
+        assert "other-missing" in result
+
 
 class TestDetectCrashStatus:
     def test_no_log_file(self, tmp_vault):

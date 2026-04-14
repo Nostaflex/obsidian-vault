@@ -33,6 +33,11 @@ _logs/weekly-extractor.log
 .superpowers/
 .vscode/
 
+# Python test cache (pytest)
+.pytest_cache/
+__pycache__/
+*.pyc
+
 # Local working dir (never synced to repo by design)
 _work.nosync/
 

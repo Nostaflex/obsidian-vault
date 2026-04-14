@@ -226,14 +226,37 @@ def rebuild_index(vault: Path, work_nosync: bool = True) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _load_lint_ignore(vault: Path) -> set[str]:
+    """Read _meta/lint-ignore.txt and return the set of wikilink basenames
+    to skip in broken-wikilinks reporting.
+
+    Format: one basename per line. Lines starting with `#` and blank lines
+    are ignored. Returns empty set if file is absent or unreadable.
+    """
+    ignore_file = vault / "_meta" / "lint-ignore.txt"
+    if not ignore_file.exists():
+        return set()
+    try:
+        content = ignore_file.read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        return set()
+    return {
+        line.strip()
+        for line in content.splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    }
+
+
 def find_broken_wikilinks(vault: Path) -> list[str]:
     """Find all broken [[wikilinks]] in vault (target note doesn't exist).
 
-    Resolves by basename (Obsidian convention).
+    Resolves by basename (Obsidian convention). Filters out false positives
+    listed in `_meta/lint-ignore.txt` (e.g. illustrative examples in prose).
     """
     notes = list_active_notes(vault)
     # Build basename index: "note-name" → exists
     basenames = {note.stem for note in notes}
+    ignore = _load_lint_ignore(vault)
 
     broken = set()
     for note in notes:
@@ -243,7 +266,7 @@ def find_broken_wikilinks(vault: Path) -> list[str]:
             continue
         for link in extract_wikilinks(content):
             basename = basename_of_link(link)
-            if basename and basename not in basenames:
+            if basename and basename not in basenames and basename not in ignore:
                 broken.add(link)
     return sorted(broken)
 

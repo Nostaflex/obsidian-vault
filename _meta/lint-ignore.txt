@@ -6,3 +6,15 @@ ancienne-note
 note-opposée
 note-dépendante
 wikilinks
+
+# Illustrative example in concept-context-preservation-after-mitosis.md
+note
+
+# Valid links — integrity-check.sh doesn't handle |alias or #anchor syntax
+future-managed-agents-anthropic|Managed Agents
+tech-debt-registry#TD-2026-016
+tech-debt-registry#TD-2026-017
+tech-debt-registry#TD-2026-018
+
+# Illustrative wikilink in future-mcp-obsidian-server.md table
+wiki
