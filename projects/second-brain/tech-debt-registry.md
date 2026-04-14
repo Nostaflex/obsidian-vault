@@ -160,12 +160,13 @@ Philosophies divergentes (orchestrator-subagent vs plan TDD).
 **Détail** : `_logs/nightly-agent.log.1` à `.log.5` — rotation manuelle ou ad-hoc, pas via `logrotate`.
 **Action** : Intégrer rotation propre dans `nightly-agent.sh` ou via launchd plist.
 
-### TD-2026-010 — Hook claude-mem SessionStart peut bloquer 8s
+### TD-2026-010 — Hook claude-mem SessionStart peut bloquer 8s `accepted`
 **Sévérité** : 🟡 MOYENNE (UX)
 **Découvert** : 2026-04-13 (audit Opus)
-**Statut** : `open`
-**Détail** : `sleep 1` dans boucle retry (8×) → ouverture session potentiellement bloquée 8s si worker claude-mem down.
-**Action** : Reporter upstream ou wrapper avec timeout court.
+**Statut** : `accepted` — 2026-04-14
+**Détail** : `sleep 1` dans boucle retry (8×) → ouverture session potentiellement bloquée 8s si worker claude-mem down. Code dans `hooks/hooks.json` du cache plugin — upstream, écrasé à chaque update.
+**Analyse** : En pratique, bun daemon tourne en permanence (PID stable). Health check passe au 1er essai → délai ≈ 0ms. Bug théorique sauf crash daemon.
+**Action prise** : Issue upstream → [thedotmack/claude-mem#1815](https://github.com/thedotmack/claude-mem/issues/1815). Pas de fix local — non durable face aux updates plugin.
 
 ### TD-2026-011 — Backups / file-history sans TTL
 **Sévérité** : 🟡 MOYENNE (stockage + sécurité)
