@@ -9,6 +9,37 @@ import pytest
 import yaml
 
 
+# ── NLMClient command splitting (regression 2026-04-14) ───────────────────────
+
+class TestNLMClientCommandSplitting:
+    """NLM_MCP_CMD='npx notebooklm-mcp@latest' must be shlex-split into argv,
+    not treated as a single binary name."""
+
+    def test_start_splits_multiword_command(self):
+        from notebooklm_weekly import NLMClient
+        client = NLMClient(cmd="npx notebooklm-mcp@latest")
+        with patch("subprocess.Popen") as mock_popen:
+            mock_popen.return_value.stdin = MagicMock()
+            mock_popen.return_value.stdout = MagicMock()
+            mock_popen.return_value.stderr = MagicMock()
+            with patch.object(client, "_initialize"):
+                client._start()
+            argv = mock_popen.call_args[0][0]
+            assert argv == ["npx", "notebooklm-mcp@latest"], f"cmd not split: {argv}"
+
+    def test_start_single_word_command_still_works(self):
+        from notebooklm_weekly import NLMClient
+        client = NLMClient(cmd="notebooklm-mcp")
+        with patch("subprocess.Popen") as mock_popen:
+            mock_popen.return_value.stdin = MagicMock()
+            mock_popen.return_value.stdout = MagicMock()
+            mock_popen.return_value.stderr = MagicMock()
+            with patch.object(client, "_initialize"):
+                client._start()
+            argv = mock_popen.call_args[0][0]
+            assert argv == ["notebooklm-mcp"]
+
+
 # ── NotebookManager ──────────────────────────────────────────────────────────
 
 class TestNotebookManagerRotation:

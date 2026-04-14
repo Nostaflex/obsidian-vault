@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.second-brain.nlm-weekly.plist
+  ────────────────────────────────────────────────────────────────────────────
+  Lance notebooklm-weekly.sh → notebooklm_weekly.py tous les dimanche à 22h00.
+  Track B : push Tier S concepts (produits par paper_synthesizer à 10h) vers
+  NotebookLM pour grounding, deadline interne 23h30.
+
+  Chronologie weekly complète :
+    Sam 8h00  : corpus_collector       → _inbox/raw/papers/
+    Sam 9h00  : weekly-extractor       → claude-mem extraction
+    Dim 10h00 : paper-synthesizer      → _inbox/raw/concepts/
+    Dim 22h00 : notebooklm-weekly      → NLM grounding des Tier S
+    Lun 2h17+ : nightly LLM (cap 15)   → vault notes
+
+  Pré-requis :
+    1. NotebookLM authentifié (setup_auth fait 2026-04-14)
+    2. 4 notebooks créés (ai/iot/cloud/ecommerce) et IDs dans _meta/nlm-notebooks.json
+    3. npx dans PATH (NLM_MCP_CMD="npx notebooklm-mcp@latest")
+
+  Installation :
+    cp _meta/launchd/com.second-brain.nlm-weekly.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.second-brain.nlm-weekly.plist
+
+  Vérification :
+    launchctl list | grep nlm-weekly
+
+  Test manuel :
+    launchctl start com.second-brain.nlm-weekly
+    tail -f ~/Documents/Obsidian/KnowledgeBase/_logs/nlm-weekly.log
+
+  Désactivation :
+    launchctl unload ~/Library/LaunchAgents/com.second-brain.nlm-weekly.plist
+    rm ~/Library/LaunchAgents/com.second-brain.nlm-weekly.plist
+
+  TD-2026-022 : résoud l'orphan notebooklm_weekly en activant Track B.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.second-brain.nlm-weekly</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>cd "$HOME/Documents/Obsidian/KnowledgeBase" &amp;&amp; ./notebooklm-weekly.sh</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>0</integer>
+    <key>Hour</key>
+    <integer>22</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    <key>HOME</key>
+    <string>/Users/djemildavid</string>
+    <key>NLM_MCP_CMD</key>
+    <string>npx notebooklm-mcp@latest</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/djemildavid/Documents/Obsidian/KnowledgeBase/_logs/nlm-weekly.stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/djemildavid/Documents/Obsidian/KnowledgeBase/_logs/nlm-weekly.stderr.log</string>
+</dict>
+</plist>
