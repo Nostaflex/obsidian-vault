@@ -3,19 +3,39 @@
   "_comment": "Auto-managed by notebooklm_weekly.py. Do not edit manually.",
   "domains": {
     "ai": {
-      "current": { "id": null, "source_count": 0, "created": null, "pushed_paper_ids": [] },
+      "current": {
+        "id": "c5976879-7de8-4e0f-913f-2d6899974d35",
+        "source_count": 1,
+        "created": "2026-04-14",
+        "pushed_paper_ids": []
+      },
       "previous": null
     },
     "iot": {
-      "current": { "id": null, "source_count": 0, "created": null, "pushed_paper_ids": [] },
+      "current": {
+        "id": "75042b46-2e67-4c13-868e-e39aa7ce14ca",
+        "source_count": 1,
+        "created": "2026-04-14",
+        "pushed_paper_ids": []
+      },
       "previous": null
     },
     "cloud": {
-      "current": { "id": null, "source_count": 0, "created": null, "pushed_paper_ids": [] },
+      "current": {
+        "id": "ee23b1dd-de81-44c3-b157-87163053cf87",
+        "source_count": 1,
+        "created": "2026-04-14",
+        "pushed_paper_ids": []
+      },
       "previous": null
     },
     "ecommerce": {
-      "current": { "id": null, "source_count": 0, "created": null, "pushed_paper_ids": [] },
+      "current": {
+        "id": "8abe41c5-80b7-40c4-8ceb-3b4c52575ce3",
+        "source_count": 1,
+        "created": "2026-04-14",
+        "pushed_paper_ids": []
+      },
       "previous": null
     }
   }
