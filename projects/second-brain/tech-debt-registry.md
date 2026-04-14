@@ -289,22 +289,31 @@ paper-synthesizer.sh (dimanche 10h via launchd) → _inbox/raw/concepts/A-*.md
 nightly LLM (2h17 quotidien, étape 2A, cap 15/run FIFO) → vault notes
 ```
 
-### TD-2026-021 — corpus_collector.py orphelin (papers n'arrivent pas seuls)
+### TD-2026-021 — corpus_collector.py orphelin (papers n'arrivent pas seuls) ✅
 **Sévérité** : 🟠 HAUTE (sans collecteur scheduled, le pipeline tourne à vide)
 **Découvert** : 2026-04-14 (audit pipeline scheduling post-TD-019 résolu)
-**Statut** : `open`
-**Détail** : Script Python (519 LOC) qui fetch papers depuis arXiv + Semantic Scholar vers `_inbox/raw/papers/<domain>/`. Aucun plist launchd ne l'invoque, aucun cron, aucun wrapper scheduled. Les 47 papers traités aujourd'hui datent de plusieurs jours, donc quelqu'un (user ?) les a déposé manuellement OU un autre run manuel a eu lieu.
+**Statut** : `resolved` (2026-04-14 14h00)
+**Détail** : Script Python (519 LOC) qui fetch papers depuis arXiv + Semantic Scholar vers `_inbox/raw/papers/<domain>/`. Aucun plist launchd ne l'invoquait. Pipeline alimenté manuellement par dépôts user.
 
-Conséquence : maintenant que paper_synthesizer est connecté (TD-019 résolu), il va tourner dimanche prochain et trouver `_inbox/raw/papers/` **vide** (les 47 ont été processés aujourd'hui et déjà déplacés vers `_processed/`). Le pipeline est connecté **mais sans alimentation**.
+**Actions réalisées** :
+1. ✅ Audit `corpus_collector.py --help` :
+   - `--max 5/domain` default, `--since 30d`, `--min-score 0.3`, 4 domains = ~20 papers/run
+   - Aucune clé API requise (arXiv + S2 publics, S2 peut return 429 sans key, fallback arXiv suffit)
+2. ✅ Test fetch validation : 1 paper AI Tier A score 0.70 sauvé en `_inbox/raw/papers/ai/...`
+3. ✅ Plist créé `_meta/launchd/com.second-brain.papers-fetch.plist`
+   - Cadence : samedi 8h00 (avant weekly-extractor 9h, avant paper-synth dim 10h)
+   - Sans dépendance API key (pas de Keychain à monter)
+   - Note : à la fin, corpus_collector appelle automatiquement `corpus-rebuild.sh` (TD-023 dead code) avec `check=False` → échec silencieux non bloquant
 
-**Action proposée** :
-1. Audit `corpus_collector.py --help` pour comprendre params (domain, count, sources)
-2. Décider cadence : tous les jours ? hebdo samedi avant paper_synth ?
-3. Vérifier secrets nécessaires (Semantic Scholar API key éventuellement)
-4. Créer plist `com.second-brain.papers-fetch.plist` (samedi 8h, avant weekly-extractor 9h ?)
-5. Run validation manuel pour vérifier output structure + volume
+**Pipeline weekly désormais bouclé** :
+```
+Sam 8h00  : corpus_collector → fetch ~20 papers → _inbox/raw/papers/
+Sam 9h00  : weekly-extractor (existant)         → claude-mem extraction
+Dim 10h00 : paper-synthesizer (TD-019 résolu)   → concepts atomiques
+Lun 2h17+ : nightly LLM (cap 15/run FIFO)        → vault notes
+```
 
-À traiter ensemble avec TD-022 lors du prochain pass scheduling-orphans.
+Premier cycle complet : samedi 18 avril 2026.
 
 ### TD-2026-022 — notebooklm_weekly.py orphelin (Track B dormant)
 **Sévérité** : 🟡 MOYENNE (681 LOC + 26 tests + wrapper shell, jamais scheduled)
