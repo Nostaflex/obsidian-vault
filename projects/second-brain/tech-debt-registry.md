@@ -262,32 +262,79 @@ Cible proposée :
 
 Coût marginal faible (couches à tester sont pures Python, mockable sans infra), grosse valeur préventive.
 
-### TD-2026-019 — paper_synthesizer.py orphelin (jamais branché en prod)
-**Sévérité** : 🟠 HAUTE (664 lignes Python + Anthropic Batch API + 47 papers en backlog ne sont jamais traités)
+### TD-2026-019 — paper_synthesizer.py orphelin (jamais branché en prod) ✅
+**Sévérité** : 🟠 HAUTE (664 lignes Python + Anthropic Batch API + 47 papers backlog jamais traités)
 **Découvert** : 2026-04-13 (audit Opus, test empirique nightly run)
+**Statut** : `resolved` (2026-04-14)
+**Détail** : Script requiert `ANTHROPIC_API_KEY` env var (line 645) sans plomberie pour l'export.
+
+**Actions réalisées** (option γ choisie) :
+1. ✅ Clé Anthropic stockée dans Keychain : `security add-generic-password -U -a $USER -s anthropic-api-key -w "sk-ant-..."`
+2. ✅ Wrapper `paper-synthesizer.sh` créé (commit `9932499`), charge depuis Keychain avec fail-fast + format check
+3. ✅ Bug `custom_id > 64 chars` découvert empiriquement au 1er run (Anthropic Batch API limit) — fix TDD `_batch_custom_id()` md5 hash + 3 regression tests (commit `0aa9c6b`)
+4. ✅ Run validation sur 45 papers (2026-04-14, ~1h, 0 erreur, ~$1) :
+   - 87 concepts extraits (31 Tier S, 54 Tier A, 2 B)
+   - 4 digests créés (ai/iot/cloud/ecommerce W16)
+   - Qualité production-grade : titres déclaratifs Matuschak-style, frontmatter complet, simple_explanation plain-language
+5. ✅ Connecté à launchd via `_meta/launchd/com.second-brain.papers-weekly.plist` (dimanche 10h00)
+
+**Verdict empirique** : pipeline délivre de la valeur quand il tourne. Décision = connecter (pas supprimer). Karpathy approach validé via mesure plutôt qu'idéologie.
+
+**Pipeline désormais bouclé** :
+```
+corpus_collector (manuel/orphan TD-021) → _inbox/raw/papers/
+        ↓
+paper-synthesizer.sh (dimanche 10h via launchd) → _inbox/raw/concepts/A-*.md
+        ↓
+nightly LLM (2h17 quotidien, étape 2A, cap 15/run FIFO) → vault notes
+```
+
+### TD-2026-021 — corpus_collector.py orphelin (papers n'arrivent pas seuls)
+**Sévérité** : 🟠 HAUTE (sans collecteur scheduled, le pipeline tourne à vide)
+**Découvert** : 2026-04-14 (audit pipeline scheduling post-TD-019 résolu)
 **Statut** : `open`
-**Détail** : Script requiert `ANTHROPIC_API_KEY` env var (line 645) mais aucune plomberie ne l'export :
-- ❌ Pas dans `~/Library/LaunchAgents/com.second-brain.nightly.plist` (env = juste PATH+HOME)
-- ❌ Pas dans Keychain (cherché `anthropic-api-key`, `anthropic`)
-- ❌ Pas dans `~/.zshrc` / `~/.bash_profile` / `~/.profile`
-- ❌ `nightly-agent.sh` lance `claude --print` (auth Claude Code, pas API key Python SDK)
+**Détail** : Script Python (519 LOC) qui fetch papers depuis arXiv + Semantic Scholar vers `_inbox/raw/papers/<domain>/`. Aucun plist launchd ne l'invoque, aucun cron, aucun wrapper scheduled. Les 47 papers traités aujourd'hui datent de plusieurs jours, donc quelqu'un (user ?) les a déposé manuellement OU un autre run manuel a eu lieu.
 
-Conséquence : `_inbox/raw/papers/` accumule 47 papers depuis ~7 jours (W15 → W16) sans personne pour les processer en concepts atomiques. Le pipeline `corpus_collector → paper_synthesizer → MOC` est interrompu après collecte.
+Conséquence : maintenant que paper_synthesizer est connecté (TD-019 résolu), il va tourner dimanche prochain et trouver `_inbox/raw/papers/` **vide** (les 47 ont été processés aujourd'hui et déjà déplacés vers `_processed/`). Le pipeline est connecté **mais sans alimentation**.
 
-**Action proposée** (γ — choisi 2026-04-13 22:50) :
-1. Stocker clé Anthropic dans Keychain (pattern `github-pat` éprouvé) :
-   `security add-generic-password -U -a $USER -s anthropic-api-key -w "sk-ant-..."`
-2. Wrapper `paper-synthesizer.sh` qui charge depuis Keychain + lance Python :
-   ```bash
-   #!/bin/bash
-   export ANTHROPIC_API_KEY=$(security find-generic-password -a $USER -s anthropic-api-key -w)
-   python3 "$(dirname "$0")/paper_synthesizer.py" "$@"
-   ```
-3. Ajouter au launchd plist hebdomadaire (`com.second-brain.weekly.plist`) ou intégrer à `nightly-agent.sh` après `integrity-check`.
-4. Run de validation sur les 47 papers en attente (Anthropic Batch, ~$1-3 estimé)
-5. Mesurer le résultat : si le pipeline complet (papers → concepts → MOC routing → /load-moc) délivre de la valeur, garder ; sinon supprimer (Karpathy approach : 664 lignes mortes ont un coût de maintenance > valeur).
+**Action proposée** :
+1. Audit `corpus_collector.py --help` pour comprendre params (domain, count, sources)
+2. Décider cadence : tous les jours ? hebdo samedi avant paper_synth ?
+3. Vérifier secrets nécessaires (Semantic Scholar API key éventuellement)
+4. Créer plist `com.second-brain.papers-fetch.plist` (samedi 8h, avant weekly-extractor 9h ?)
+5. Run validation manuel pour vérifier output structure + volume
 
-**Décision stratégique attachée** : "on simplifiera à partir du résultat" (user 2026-04-13). Le finding empirique post-fix décide : connecter (γ valid) ou supprimer (validation forte du smell #3 over-engineered).
+À traiter ensemble avec TD-022 lors du prochain pass scheduling-orphans.
+
+### TD-2026-022 — notebooklm_weekly.py orphelin (Track B dormant)
+**Sévérité** : 🟡 MOYENNE (681 LOC + 26 tests + wrapper shell, jamais scheduled)
+**Découvert** : 2026-04-14 (audit pipeline scheduling)
+**Statut** : `open`
+**Détail** : `notebooklm_weekly.py` (681 LOC, 45% test coverage) + `notebooklm-weekly.sh` (wrapper avec deadline 23:30, caffeinate, status sentinel) sont conçus pour Track B (NotebookLM grounded synthesis). Le wrapper existe mais aucun plist ne l'invoque. Track B reste donc inactif (`enrichment_status.track_b_active: false` dans last-nightly.json).
+
+Pré-requis vérifiés : `nlm-notebooks.json`, `nlm-status.json`, `_inbox/overflow/`, `_inbox/quarantine/` existent (bootstrap commit `ca70695` du Sprint 2). Variable `NLM_MCP_CMD` requise selon docstring.
+
+**Action proposée** :
+1. Vérifier auth NotebookLM (`auth.json`) configuré
+2. Vérifier MCP server NLM disponible (`mcp__notebooklm__*` tools listés mais peut-être inactifs)
+3. Décider : activer Track B (créer plist dimanche 22h, deadline 23:30) ou marquer feature comme "future, pas activée pour l'instant" → selon que le user veut Track B grounded ou pas
+4. Si activé : créer `com.second-brain.nlm-weekly.plist`
+
+Lié : `_meta/notebooklm-context-{ai,iot,cloud,ecommerce,global}.md` existent et sont updated par nightly. Mais sans Track B exécuté, ces contextes ne sont jamais lus par NLM.
+
+### TD-2026-023 — corpus-rebuild.sh dead code (0 obs indexed)
+**Sévérité** : 🟢 BASSE (cosmétique, ne casse rien mais pollue)
+**Découvert** : 2026-04-14 (audit scheduling, log review)
+**Statut** : `open`
+**Détail** : `corpus-rebuild.sh` (1939 bytes) tente de reconstruire le corpus claude-mem `research-papers` via `mcp__plugin_claude-mem_mcp-search__build_corpus`. Le log `_logs/corpus-rebuild.log` documente 3 runs manuels (2026-04-11) qui retournent tous **0 fichiers indexés**. Note explicite dans le log :
+> Le paramètre `path` n'est pas supporté nativement par `build_corpus` — il filtre des observations claude-mem, pas des fichiers filesystem. Les papiers dans `_inbox/raw/papers/` ne sont pas encore traités par le pipeline d'extraction.
+
+Donc le script ne marche pas par design — il essaie de faire qqch que `build_corpus` ne supporte pas. C'est du code mort confirmé.
+
+**Action proposée** :
+1. Supprimer `corpus-rebuild.sh` + commit avec rationale
+2. Si on veut vraiment indexer les papers dans claude-mem, c'est un autre design (probablement écrire un script qui INGEST chaque .md comme observation puis rebuild)
+3. Pour l'instant, paper_synthesizer + nightly LLM remplit le rôle "papers → connaissance utilisable" sans avoir besoin de claude-mem indexing
 
 ---
 
