@@ -18,12 +18,12 @@ PRIVACY_PATTERNS = [
     (r'\.nosync', 'nosync-path'),
     (r'work\.nosync', 'nosync-path'),
     (r'confidentiel', 'confidential-marker'),
+    (r'sk-ant-[a-zA-Z0-9\-]{20,}', 'anthropic-key'),
     (r'sk-[a-zA-Z0-9\-]{20,}', 'api-key'),
     (r'Bearer\s+\S{10,}', 'bearer-token'),
     (r'password\s*[:=]\s*\S+', 'password'),
     (r'ghp_[a-zA-Z0-9]{36}', 'github-token'),
     (r'-----BEGIN\s+\w+\s+KEY', 'private-key'),
-    (r'sk-ant-[a-zA-Z0-9\-]{20,}', 'anthropic-key'),
 ]
 
 # ── Patterns scoring ──────────────────────────────────────────────────────────
