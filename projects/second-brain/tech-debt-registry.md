@@ -194,20 +194,16 @@ Philosophies divergentes (orchestrator-subagent vs plan TDD).
    - Exit ≠ 0 : **stop avec code 1** (plus de continuation silencieuse sur vault corrompu)
 3. ✅ Option `--best-effort` disponible pour rétro-compat si jamais besoin
 
-### TD-2026-018 — nightly-agent.sh trap EXIT ne couvre pas SIGKILL
+### TD-2026-018 — nightly-agent.sh trap EXIT ne couvre pas SIGKILL ✅
 **Sévérité** : 🟡 MOYENNE (race condition / blocage silencieux)
 **Découvert** : 2026-04-13 (audit Opus bash/python)
-**Statut** : `open`
-**Fichier** : `nightly-agent.sh` L.23
-**Détail** : Le lock mkdir est nettoyé via `trap "rmdir $LOCKDIR" EXIT`. Mais :
-- `kill -9` ne déclenche pas trap
-- Crash launchd / SIGBUS / OOM → lock orphelin
-- Les nuits suivantes : `mkdir` échoue → `exit 0` silencieux → aucune synthèse, aucun alert
-**Action** :
-- Ajouter détection d'âge du lock (si > 24h → considérer orphelin + alert)
-- Ou : utiliser PID dans le lock + vérifier `kill -0 $pid` au mount
-- Ou : ajouter un healthcheck cron séparé (`launchctl list` + last-nightly.json age)
-**Priorité** : Sprint 2 ou 3
+**Statut** : `resolved` — 2026-04-14 (validé sur le terrain le même jour : lock orphelin du 2026-04-13 a bloqué un relaunch manuel)
+**Fichier** : `nightly-agent.sh` L.14-56
+**Fix** :
+- PID du process écrit dans `$LOCKDIR/pid` à l'acquisition
+- Au mount, si lock présent : lire PID → `kill -0 $pid` → si mort, réclamer
+- Fallback : si pas de PID ou PID vivant mais lock > 24h → réclamer par âge
+- Test harness `tests/test_nightly_lock.sh` couvre 5 scénarios (no-lock, live PID, dead PID, old no-PID, recent no-PID)
 
 ---
 
