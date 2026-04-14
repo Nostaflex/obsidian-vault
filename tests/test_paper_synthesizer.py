@@ -6,9 +6,211 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from paper_synthesizer import (
     _batch_custom_id,
+    _build_concepts_summary,
+    _extract_title,
+    clear_batch_job,
+    load_pending_batch_job,
     parse_concepts_from_text,
+    parse_frontmatter,
     sanitize_paper_id,
+    save_batch_job,
+    slugify,
+    write_concept_note,
 )
+
+
+class TestWriteConceptNote:
+    def _concept(self, **overrides):
+        base = {
+            "paper_id": "arxiv:2401.12345",
+            "tier": "A",
+            "concept_title": "Example atomic concept",
+            "source_url": "http://arxiv.org/abs/2401.12345",
+            "simple_explanation": "In plain words.",
+            "essence": "The essential claim.",
+            "detail": "Longer reasoning and context.",
+            "tags": ["transformers", "attention"],
+        }
+        base.update(overrides)
+        return base
+
+    def test_writes_file_with_expected_filename_pattern(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        concepts = tmp_path / "concepts"
+        monkeypatch.setattr(ps, "CONCEPTS_DIR", concepts)
+        path = write_concept_note(self._concept(), "ai", 16, "2026-04-14", index=1)
+        assert path.exists()
+        assert path.name == "A-arxiv-2401-12345-1.md"
+
+    def test_frontmatter_contains_tier_and_tags(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        monkeypatch.setattr(ps, "CONCEPTS_DIR", tmp_path / "concepts")
+        path = write_concept_note(self._concept(tier="S"), "cloud", 16, "2026-04-14")
+        content = path.read_text()
+        assert "tier: S" in content
+        assert "#cloud" in content
+        assert "#transformers" in content
+        assert "# Example atomic concept" in content
+
+    def test_fallback_when_paper_id_missing(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        monkeypatch.setattr(ps, "CONCEPTS_DIR", tmp_path / "concepts")
+        path = write_concept_note(
+            self._concept(paper_id="", source_url="http://x/y"),
+            "ai", 16, "2026-04-14",
+        )
+        # Filename uses the fallback pattern
+        assert path.name.startswith("A-unknown-")
+        assert path.exists()
+
+    def test_index_appears_in_filename(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        monkeypatch.setattr(ps, "CONCEPTS_DIR", tmp_path / "concepts")
+        p1 = write_concept_note(self._concept(), "ai", 16, "2026-04-14", index=1)
+        p2 = write_concept_note(self._concept(), "ai", 16, "2026-04-14", index=2)
+        assert p1.name.endswith("-1.md")
+        assert p2.name.endswith("-2.md")
+
+
+class TestParseFrontmatter:
+    def test_returns_empty_when_no_frontmatter(self):
+        meta, body = parse_frontmatter("# Just a title\n\nBody text")
+        assert meta == {}
+        assert body == "# Just a title\n\nBody text"
+
+    def test_extracts_simple_yaml_fields(self):
+        txt = "---\ntitle: Hello\ntier: A\n---\n# Body"
+        meta, body = parse_frontmatter(txt)
+        assert meta["title"] == "Hello"
+        assert meta["tier"] == "A"
+        assert body == "# Body"
+
+    def test_returns_empty_when_frontmatter_not_closed(self):
+        meta, body = parse_frontmatter("---\ntitle: Hello\n\nBody without closing")
+        assert meta == {}
+
+    def test_ignores_lines_without_colon(self):
+        txt = "---\ntitle: Hello\nno-colon-line\ntier: A\n---\nBody"
+        meta, _ = parse_frontmatter(txt)
+        assert meta == {"title": "Hello", "tier": "A"}
+
+
+class TestExtractTitle:
+    def test_first_h1_is_returned(self):
+        body = "Some lead-in text\n# The Real Title\n\nContent"
+        assert _extract_title(body) == "The Real Title"
+
+    def test_untitled_when_no_h1(self):
+        assert _extract_title("Body without any h1 line") == "Untitled"
+
+    def test_h2_not_picked(self):
+        body = "## Sub heading\n# Real Title"
+        assert _extract_title(body) == "Real Title"
+
+
+class TestSlugify:
+    def test_lowercases_and_kebabs(self):
+        assert slugify("Hello World") == "hello-world"
+
+    def test_strips_accents(self):
+        assert slugify("À l'épopée française") == "a-lepopee-francaise"
+
+    def test_strips_special_chars(self):
+        assert slugify("Concept: foo/bar (test)") == "concept-foobar-test"
+
+    def test_truncates_to_max_len(self):
+        long = "a" * 100
+        assert len(slugify(long, max_len=30)) == 30
+
+    def test_collapses_dashes(self):
+        assert slugify("foo---bar") == "foo-bar"
+
+    def test_strips_trailing_dashes_after_truncation(self):
+        # Truncating mid-dash must not leave trailing "-"
+        result = slugify("hello world foo bar", max_len=12)
+        assert not result.endswith("-")
+
+
+class TestBuildConceptsSummary:
+    def test_empty_list_returns_empty_string(self):
+        assert _build_concepts_summary([]) == ""
+
+    def test_formats_tier_prefix(self):
+        concepts = [{"tier": "S", "concept_title": "Foo", "essence": "bar"}]
+        out = _build_concepts_summary(concepts)
+        assert out.startswith("[S]")
+        assert "Foo" in out
+        assert "bar" in out
+
+    def test_handles_missing_fields_gracefully(self):
+        # No tier, no title, no essence → doesn't crash
+        out = _build_concepts_summary([{}])
+        assert "[?]" in out  # tier fallback
+
+    def test_truncates_long_essence_to_120(self):
+        long_essence = "x" * 500
+        concepts = [{"tier": "A", "concept_title": "T", "essence": long_essence}]
+        out = _build_concepts_summary(concepts)
+        assert "x" * 120 in out
+        assert "x" * 121 not in out
+
+    def test_joins_with_newlines(self):
+        concepts = [
+            {"tier": "S", "concept_title": "A", "essence": "1"},
+            {"tier": "A", "concept_title": "B", "essence": "2"},
+        ]
+        out = _build_concepts_summary(concepts)
+        assert out.count("\n") == 1  # 2 lines → 1 separator
+
+
+class TestBatchJobsFile:
+    """save_batch_job / load_pending_batch_job / clear_batch_job persist
+    a JSON state to LOGS_DIR/batch_jobs.json. Redirect the constant
+    via monkeypatch for isolation."""
+
+    def test_save_then_load_roundtrip(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        monkeypatch.setattr(ps, "LOGS_DIR", tmp_path)
+        monkeypatch.setattr(ps, "BATCH_JOBS_FILE", tmp_path / "batch_jobs.json")
+        save_batch_job("ai", "msgbatch_01ABC")
+        assert load_pending_batch_job("ai") == "msgbatch_01ABC"
+
+    def test_load_returns_none_when_file_absent(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        monkeypatch.setattr(ps, "BATCH_JOBS_FILE", tmp_path / "nonexistent.json")
+        assert load_pending_batch_job("ai") is None
+
+    def test_load_returns_none_on_malformed_json(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        bad = tmp_path / "batch_jobs.json"
+        bad.write_text("not valid json {{{")
+        monkeypatch.setattr(ps, "BATCH_JOBS_FILE", bad)
+        assert load_pending_batch_job("ai") is None
+
+    def test_save_preserves_other_domains(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        monkeypatch.setattr(ps, "LOGS_DIR", tmp_path)
+        monkeypatch.setattr(ps, "BATCH_JOBS_FILE", tmp_path / "batch_jobs.json")
+        save_batch_job("ai", "batch_AI")
+        save_batch_job("iot", "batch_IOT")
+        assert load_pending_batch_job("ai") == "batch_AI"
+        assert load_pending_batch_job("iot") == "batch_IOT"
+
+    def test_clear_removes_only_specified_domain(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        monkeypatch.setattr(ps, "LOGS_DIR", tmp_path)
+        monkeypatch.setattr(ps, "BATCH_JOBS_FILE", tmp_path / "batch_jobs.json")
+        save_batch_job("ai", "batch_AI")
+        save_batch_job("iot", "batch_IOT")
+        clear_batch_job("ai")
+        assert load_pending_batch_job("ai") is None
+        assert load_pending_batch_job("iot") == "batch_IOT"
+
+    def test_clear_silent_on_missing_file(self, tmp_path, monkeypatch):
+        import paper_synthesizer as ps
+        monkeypatch.setattr(ps, "BATCH_JOBS_FILE", tmp_path / "nonexistent.json")
+        # Should not raise
+        clear_batch_job("ai")
 
 
 class TestBatchCustomId:
