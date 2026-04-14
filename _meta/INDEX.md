@@ -1,93 +1,117 @@
 # INDEX — Knowledge Base
-Updated: 2026-04-12T12:38:00Z | Active: 38 notes | Ceiling: 300
+Updated: 2026-04-13T22:42:00+02:00 | Active: 45 notes | Ceiling: 300
 
 ## Par projet
-
 ### universal (10)
-- [Convention — MCP VSCode : Fichier mcp.json Dédié](universal/mcp-vscode-dedicated-file.md) — MCP server config appartient à mcp.json, pas settings
-- [Pattern — Subagent-Driven Development pour Implémentations Multi-Fichiers](universal/pattern-subagent-driven-development.md) — agents parallèles pour implémentations complexes multi-fichiers
-- [Convention — Prix stockés en centimes entiers](universal/prix-centimes-convention.md) — prix en centimes évite les erreurs de virgule flottante
-- [TVA Guadeloupe — Taux 8.5% (DOM-TOM)](universal/vat-guadeloupe-8-5.md) — taux TVA DOM-TOM différent du taux continental
-- [Research Digest — 2026-W15](universal/research/digest-2026-W15.md) — synthèse hebdomadaire papers arXiv semaine 15
-- [Anti-bug — ZIP perd le bit exécutable si chmod +x absent avant archivage](universal/anti-bug-zip-executable-bit-lost.md) — chmod +x doit précéder zip -r sinon scripts non exécutables
-- [Anti-bug — set -euo pipefail + jq sur fichier absent crashe avant toute logique init](universal/anti-bug-set-e-jq-missing-file.md) — tester existence fichier avant jq sous set -e
-- [La Collector's Fallacy transforme l'accumulation en substitut de compréhension](universal/concept-collectors-fallacy-accumulation-passive.md) — accumuler ≠ comprendre, mesurer le taux d'assimilation
-- [La mitose cognitive produit N notes indépendantes depuis 1 source multi-concepts](universal/concept-cognitive-mitosis-atomicity.md) — test fonction pure : note compréhensible sans ses sœurs
-- [La section ## Liens annotée préserve le contexte après mitose cognitive](universal/concept-context-preservation-after-mitosis.md) — lien nu = contexte perdu, annotation encode le pont sémantique
+- anti-bug-set-e-jq-missing-file — set -euo pipefail + jq crashe si fichier absent
+- anti-bug-zip-executable-bit-lost — chmod +x AVANT zip sinon bit exécutable perdu
+- concept-cognitive-mitosis-atomicity — découper source multi-concepts en N notes atomiques
+- concept-collectors-fallacy-accumulation-passive — accumulation passive imite compréhension sans produire
+- concept-context-preservation-after-mitosis — annotation lien obligatoire pour contexte post-mitose
+- mcp-vscode-dedicated-file — VSCode MCP config dans fichier dédié, pas settings.json
+- pattern-subagent-driven-development — 1 subagent par tâche + reviewers valide qualité
+- prix-centimes-convention — prix toujours en centimes entiers, formatPrice() seul
+- research/digest-2026-W15 — top papers W15 2026 AI/IoT/Cloud/E-commerce curatés
+- vat-guadeloupe-8-5 — TVA Guadeloupe 8.5%, distinct de métropole 20%
 
 ### projects/gpparts (4)
-- [Anti-bug — Race condition checkout GP Parts](projects/gpparts/anti-bug-checkout-race-condition.md) — race condition commande côté React corrigée
-- [Découverte — Facture Électronique FR : Réception obligatoire au 1er septembre 2026](projects/gpparts/discovery-facture-electronique-fr-2026.md) — deadline légale facture electronique France 2026
-- [Découverte — Next.js 16 : Breaking Changes à Planifier pour GP Parts](projects/gpparts/discovery-nextjs-16-breaking-changes.md) — migration Next.js 16 à anticiper pour GP Parts
-- [Next.js 15 — Breaking Changes : Cache Fetch et Async Headers](projects/gpparts/nextjs-15-breaking-changes-cache.md) — cache fetch no-store par défaut en Next.js 15
+- anti-bug-checkout-race-condition — setOrderPlaced(true) AVANT clearCart sinon redirection
+- discovery-facture-electronique-fr-2026 — réception facture électronique obligatoire France sept 2026
+- discovery-nextjs-16-breaking-changes — breaking changes Next.js 16 à auditer avant migration
+- nextjs-15-breaking-changes-cache — fetch no-store par défaut, next/headers retourne Promise
 
-### projects/second-brain (24)
-- [Anti-bug — Claude CLI auth inaccessible depuis launchd (Keychain Lock)](projects/second-brain/anti-bug-claude-cli-keychain-launchd.md) — session Aqua requise pour keychain depuis launchd
-- [Anti-bug — Claude JSONL Conversation History : Schéma Réel](projects/second-brain/anti-bug-claude-jsonl-schema.md) — schéma JSONL claude différent de la doc officielle
-- [Anti-bug — grep "confidentiel" génère un faux positif sur les titres H1](projects/second-brain/anti-bug-grep-confidentiel-faux-positif.md) — grep sur mot clé dans titre H1 donne faux positif
-- [Anti-bug — launchd bloqué par TCC pour iCloud Drive](projects/second-brain/anti-bug-launchd-icloud-tcc.md) — LimitLoadToSessionType Aqua résout le blocage TCC
-- [Anti-bug — MCP server scopé VS Code uniquement, invisible aux scripts launchd](projects/second-brain/anti-bug-mcp-server-scoped-vscode-only.md) — MCP dans settings.json = VS Code seulement, pas global
-- [Architecture — Dual Profil VSCode : Personal / Work](projects/second-brain/architecture-dual-profile-vscode.md) — séparation profils VSCode pour privacy employeur
-- [Convention — LOG.md Append-Only Anti-Re-Ingestion](projects/second-brain/convention-log-anti-re-ingestion.md) — LOG.md ne jamais effacer, empêche double-ingestion
-- [Décision — Architecture Hybride Second Brain (Algo + LLM)](projects/second-brain/decision-architecture-hybride-second-brain.md) — algo pour structure, LLM pour sémantique
-- [Knowledge Graph — Route différée (Second Brain)](projects/second-brain/decision-knowledge-graph-deferred.md) — knowledge graph Karpathy différé, pas prioritaire
-- [Guanateck distribue le Second Brain Kit en vente unique Gumroad — pas de SaaS](projects/second-brain/decision-mind-free-kit-first-strategy.md) — kit autodéployé, zéro infrastructure, anonymat employeur
-- [Décision — Pattern Vault Seed / Runtime](projects/second-brain/decision-vault-seed-runtime-pattern.md) — seed versionné séparé du runtime utilisateur
-- [Décision — Weekly Extractor : Approach C (session interactive)](projects/second-brain/decision-weekly-extractor-approach-c.md) — session interactive requise pour accès MCP claude-mem
-- [Découverte — Architecture Interne claude-mem](projects/second-brain/discovery-claude-mem-architecture.md) — ChromaDB + SQLite + HTTP worker local, zero cloud
-- [Découverte — claude-mem : Risque Privacy (observations non compartimentées)](projects/second-brain/discovery-claude-mem-privacy-risk.md) — observations claude-mem traversent projets sans isolation
-- [Découverte — MCP Tools inaccessibles en mode --print](projects/second-brain/discovery-mcp-tools-print-mode.md) — claude --print n'initialise pas MCP, bloque claude-mem
-- [Découverte — Nightly Agent : Architecture et Workflow Complet](projects/second-brain/discovery-nightly-agent-architecture.md) — pipeline 6 étapes, launchd 2h17, budget 35k tokens
-- [Découverte — Nightly Agent : Contenu Vault Transit vers API Anthropic](projects/second-brain/discovery-nightly-vault-api-transit.md) — contenu vault transite vers Anthropic à chaque run
-- [Second Brain v4 — 5 Gaps Karpathy Audit Corrigés](projects/second-brain/discovery-second-brain-v4-gaps-fixes.md) — 5 gaps audit Karpathy corrigés en v4
-- [Découverte — Audit Vault : 4 Failles Structurelles Identifiées](projects/second-brain/discovery-vault-failles-audit.md) — 4 failles structurelles audit v4
-- [L'Approche B enrichit le vault via watchlist + corpus sans scraping externe](projects/second-brain/feature-enrichment-pipeline-approach-b.md) — enrichissement ciblé depuis watchlist, 7 tasks PR#5
-- [Le weekly extractor est opérationnel — 45 concepts extraits au premier run](projects/second-brain/feature-weekly-extractor-first-run.md) — PR#4 mergé, 350+ obs traitées, 14 filtrées privacy
-- [Guardrail — Règle Non-Annulable Nightly Prompt](projects/second-brain/guardrail-nightly-prompt.md) — règles absolues nightly prompt non annulables
-- [Pattern — Double Protection iCloud pour _work.nosync/](projects/second-brain/icloud-work-nosync-protection.md) — double protection iCloud + gitignore pour données sensibles
-- [Pattern — _inbox/raw/ Input Layer (Karpathy Raw Input Zone)](projects/second-brain/pattern-inbox-raw-layer.md) — zone entrée raw découplée du vault compilé
+### projects/second-brain (31)
+- anti-bug-claude-cli-keychain-launchd — login.keychain-db verrouillé hors session interactive
+- anti-bug-claude-jsonl-schema — contenu dans message.content, pas d.content
+- anti-bug-grep-confidentiel-faux-positif — grep matche titre H1 INDEX, pas body
+- anti-bug-launchd-icloud-tcc — fix: LimitLoadToSessionType Aqua dans plist
+- anti-bug-mcp-server-scoped-vscode-only — MCP servers actifs uniquement dans env qui charge config
+- architecture-dual-profile-vscode — profil Personal Claude Code, profil Work Copilot Business
+- architecture-paper-synthesizer — concept extractions atomiques via Gemini, anti-Collector's-Fallacy
+- architecture-token-efficient-skills — ADR skills token-efficient pour Claude Code
+- audit-setup-claude-code-2026-04-13 — audit complet setup Claude Code, score B+
+- convention-log-anti-re-ingestion — LOG.md append-only empêche re-ingestion fichiers
+- decision-architecture-hybride-second-brain — algo+LLM, injection directe vault, 3 guardrails
+- decision-bash-vs-python-boundary — garder mix bash orchestration / Python traitement
+- decision-knowledge-graph-deferred — différé à 100+ notes, wikilinks déjà graphe implicite
+- decision-mind-free-kit-first-strategy — Guanateck vend Second Brain Kit via Gumroad
+- decision-vault-seed-runtime-pattern — vault/ seed en git, runtime jamais versionné
+- decision-weekly-extractor-approach-c — session interactive car --print bloque MCP tools
+- discovery-claude-mem-architecture — SQLite local, ChromaDB 13Mo, daemon HTTP
+- discovery-claude-mem-privacy-risk — obs non compartimentées par zone sensible
+- discovery-mcp-tools-print-mode — claude --print n'initialise pas plugin system
+- discovery-nightly-agent-architecture — launchd 2h17, integrity-check, output _inbox/agent/
+- discovery-nightly-vault-api-transit — data flow audité, protection = guardrail prompt
+- discovery-second-brain-v4-gaps-fixes — 5 gaps v3 corrigés, anti-re-ingestion validée
+- discovery-vault-failles-audit — 4 failles structurelles identifiées, gaps implémentation
+- feature-enrichment-pipeline-approach-b — approche B watchlist+signaux, PR#5 mergé
+- feature-weekly-extractor-first-run — 350+ obs traitées, 45 concepts retenus, 14 filtrés
+- future-managed-agents-anthropic — agents hébergés Anthropic avec container sandbox
+- future-mcp-obsidian-server — MCP server Obsidian pour accès vault natif
+- guardrail-nightly-prompt — prompt non-annulable par inbox, risque résiduel documenté
+- icloud-work-nosync-protection — .nosync naming + xattr, brctl status vérification
+- pattern-inbox-raw-layer — zone dépôt articles/docs/repos, ingestion auto Étape 2
+- tech-debt-registry — registre dette technique pipeline second-brain
 
 ## Par type
+### decisions (8)
+- decision-architecture-hybride-second-brain — algo+LLM, injection directe vault
+- decision-bash-vs-python-boundary — garder mix bash orchestration / Python traitement
+- decision-knowledge-graph-deferred — différé à 100+ notes
+- decision-mind-free-kit-first-strategy — Guanateck vend Kit via Gumroad
+- decision-vault-seed-runtime-pattern — vault/ seed en git, runtime dynamique
+- decision-weekly-extractor-approach-c — session interactive car --print bloque MCP
+- architecture-token-efficient-skills — ADR skills token-efficient
+- feature-enrichment-pipeline-approach-b — approche B watchlist+signaux
+
+### patterns (3)
+- pattern-inbox-raw-layer — zone dépôt sources externes, ingestion auto
+- pattern-subagent-driven-development — 1 subagent/tâche + reviewers
+- icloud-work-nosync-protection — double protection .nosync + xattr
+
+### discoveries (10)
+- discovery-claude-mem-architecture — SQLite local, ChromaDB, daemon HTTP
+- discovery-claude-mem-privacy-risk — obs non compartimentées
+- discovery-facture-electronique-fr-2026 — e-invoicing obligatoire sept 2026
+- discovery-mcp-tools-print-mode — --print bloque plugin system
+- discovery-nextjs-16-breaking-changes — breaking changes Next.js 16
+- discovery-nightly-agent-architecture — launchd 2h17, workflow complet
+- discovery-nightly-vault-api-transit — vault transit vers API Anthropic
+- discovery-second-brain-v4-gaps-fixes — 5 gaps v3 corrigés
+- discovery-vault-failles-audit — 4 failles structurelles
+- feature-weekly-extractor-first-run — 350+ obs, 45 concepts retenus
 
 ### anti-bug (8)
-- [Anti-bug — Race condition checkout GP Parts](projects/gpparts/anti-bug-checkout-race-condition.md) — race condition commande côté React corrigée
-- [Anti-bug — Claude CLI auth inaccessible depuis launchd](projects/second-brain/anti-bug-claude-cli-keychain-launchd.md) — session Aqua requise pour keychain depuis launchd
-- [Anti-bug — Claude JSONL Conversation History : Schéma Réel](projects/second-brain/anti-bug-claude-jsonl-schema.md) — schéma JSONL claude différent de la doc officielle
-- [Anti-bug — grep "confidentiel" génère un faux positif sur les titres H1](projects/second-brain/anti-bug-grep-confidentiel-faux-positif.md) — grep sur mot clé dans titre H1 donne faux positif
-- [Anti-bug — launchd bloqué par TCC pour iCloud Drive](projects/second-brain/anti-bug-launchd-icloud-tcc.md) — LimitLoadToSessionType Aqua résout le blocage TCC
-- [Anti-bug — MCP server scopé VS Code uniquement, invisible aux scripts launchd](projects/second-brain/anti-bug-mcp-server-scoped-vscode-only.md) — MCP dans settings.json = VS Code seulement, pas global
-- [Anti-bug — ZIP perd le bit exécutable si chmod +x absent avant archivage](universal/anti-bug-zip-executable-bit-lost.md) — chmod +x doit précéder zip -r sinon scripts non exécutables
-- [Anti-bug — set -euo pipefail + jq sur fichier absent crashe avant toute logique init](universal/anti-bug-set-e-jq-missing-file.md) — tester existence fichier avant jq sous set -e
-
-### decisions (6)
-- [Décision — Architecture Hybride Second Brain (Algo + LLM)](projects/second-brain/decision-architecture-hybride-second-brain.md) — algo pour structure, LLM pour sémantique
-- [Knowledge Graph — Route différée (Second Brain)](projects/second-brain/decision-knowledge-graph-deferred.md) — knowledge graph Karpathy différé, pas prioritaire
-- [Guanateck distribue le Second Brain Kit en vente unique Gumroad — pas de SaaS](projects/second-brain/decision-mind-free-kit-first-strategy.md) — kit autodéployé, zéro infrastructure, anonymat employeur
-- [Décision — Pattern Vault Seed / Runtime](projects/second-brain/decision-vault-seed-runtime-pattern.md) — seed versionné séparé du runtime utilisateur
-- [Décision — Weekly Extractor : Approach C (session interactive)](projects/second-brain/decision-weekly-extractor-approach-c.md) — session interactive requise pour accès MCP claude-mem
-- [L'Approche B enrichit le vault via watchlist + corpus sans scraping externe](projects/second-brain/feature-enrichment-pipeline-approach-b.md) — enrichissement ciblé depuis watchlist, 7 tasks PR#5
-
-### patterns (4)
-- [Convention — MCP VSCode : Fichier mcp.json Dédié](universal/mcp-vscode-dedicated-file.md) — MCP server config appartient à mcp.json, pas settings
-- [Pattern — Subagent-Driven Development pour Implémentations Multi-Fichiers](universal/pattern-subagent-driven-development.md) — agents parallèles pour implémentations complexes multi-fichiers
-- [Guardrail — Règle Non-Annulable Nightly Prompt](projects/second-brain/guardrail-nightly-prompt.md) — règles absolues nightly prompt non annulables
-- [Pattern — _inbox/raw/ Input Layer (Karpathy Raw Input Zone)](projects/second-brain/pattern-inbox-raw-layer.md) — zone entrée raw découplée du vault compilé
-
-### discoveries (9)
-- [Découverte — Architecture Interne claude-mem](projects/second-brain/discovery-claude-mem-architecture.md) — ChromaDB + SQLite + HTTP worker local, zero cloud
-- [Découverte — claude-mem : Risque Privacy](projects/second-brain/discovery-claude-mem-privacy-risk.md) — observations claude-mem traversent projets sans isolation
-- [Découverte — MCP Tools inaccessibles en mode --print](projects/second-brain/discovery-mcp-tools-print-mode.md) — claude --print n'initialise pas MCP, bloque claude-mem
-- [Découverte — Nightly Agent : Architecture et Workflow Complet](projects/second-brain/discovery-nightly-agent-architecture.md) — pipeline 6 étapes, launchd 2h17, budget 35k tokens
-- [Découverte — Nightly Agent : Contenu Vault Transit vers API Anthropic](projects/second-brain/discovery-nightly-vault-api-transit.md) — contenu vault transite vers Anthropic à chaque run
-- [Second Brain v4 — 5 Gaps Karpathy Audit Corrigés](projects/second-brain/discovery-second-brain-v4-gaps-fixes.md) — 5 gaps audit Karpathy corrigés en v4
-- [Découverte — Audit Vault : 4 Failles Structurelles Identifiées](projects/second-brain/discovery-vault-failles-audit.md) — 4 failles structurelles audit v4
-- [Découverte — Facture Électronique FR : Réception obligatoire au 1er septembre 2026](projects/gpparts/discovery-facture-electronique-fr-2026.md) — deadline légale facture electronique France 2026
-- [Découverte — Next.js 16 : Breaking Changes à Planifier pour GP Parts](projects/gpparts/discovery-nextjs-16-breaking-changes.md) — migration Next.js 16 à anticiper pour GP Parts
+- anti-bug-checkout-race-condition — setOrderPlaced AVANT clearCart
+- anti-bug-claude-cli-keychain-launchd — keychain verrouillé hors session
+- anti-bug-claude-jsonl-schema — message.content pas d.content
+- anti-bug-grep-confidentiel-faux-positif — grep matche titres H1
+- anti-bug-launchd-icloud-tcc — fix LimitLoadToSessionType Aqua
+- anti-bug-mcp-server-scoped-vscode-only — MCP scopé à l'env actif
+- anti-bug-set-e-jq-missing-file — set -e + jq fichier absent crashe
+- anti-bug-zip-executable-bit-lost — chmod +x avant zip obligatoire
 
 ### concept (3)
-- [La Collector's Fallacy transforme l'accumulation en substitut de compréhension](universal/concept-collectors-fallacy-accumulation-passive.md) — accumuler ≠ comprendre, mesurer le taux d'assimilation
-- [La mitose cognitive produit N notes indépendantes depuis 1 source multi-concepts](universal/concept-cognitive-mitosis-atomicity.md) — test fonction pure : note compréhensible sans ses sœurs
-- [La section ## Liens annotée préserve le contexte après mitose cognitive](universal/concept-context-preservation-after-mitosis.md) — lien nu = contexte perdu, annotation encode le pont sémantique
+- concept-cognitive-mitosis-atomicity — N notes indépendantes depuis 1 source
+- concept-collectors-fallacy-accumulation-passive — accumulation ≠ compréhension
+- concept-context-preservation-after-mitosis — annotation préserve contexte
+
+### architecture (3)
+- architecture-dual-profile-vscode — profils Personal/Work isolés
+- architecture-paper-synthesizer — concept extractions atomiques Gemini
+- guardrail-nightly-prompt — prompt non-annulable
 
 ### bridge (0)
-_(aucune note bridge active)_
+_(aucune note bridge pour le moment)_
+
+### other (10)
+- audit-setup-claude-code-2026-04-13 — audit complet setup, score B+
+- convention-log-anti-re-ingestion — LOG.md append-only
+- future-managed-agents-anthropic — agents hébergés Anthropic
+- future-mcp-obsidian-server — MCP server Obsidian natif
+- mcp-vscode-dedicated-file — config MCP fichier dédié
+- nextjs-15-breaking-changes-cache — fetch no-store par défaut
+- prix-centimes-convention — prix centimes entiers
+- research/digest-2026-W15 — top papers W15 2026
+- tech-debt-registry — registre dette technique
+- vat-guadeloupe-8-5 — TVA Guadeloupe 8.5%

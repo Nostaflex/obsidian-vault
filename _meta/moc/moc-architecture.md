@@ -2,14 +2,15 @@
 type: moc
 tag: architecture
 tags: [architecture, patterns, pipeline]
-notes_count: 12
+notes_count: 13
 last_updated: 2026-04-13
 scope: "auto-generated MOC for tag #architecture"
 ---
 # MOC — #architecture
-Generated: 2026-04-13 | 12 notes
+Generated: 2026-04-13 | 13 notes
 
 - [[architecture-dual-profile-vscode]] — Deux profils VSCode séparent données Personal et Work Renault
+- [[architecture-token-efficient-skills]] — ADR skills token-efficient pour Claude Code, compression budget
 - [[decision-architecture-hybride-second-brain]] — Hybride Algo+LLM injection directe vault trois guardrails prompt
 - [[decision-bash-vs-python-boundary]] — Mix bash 250 LOC Python 1860 LOC conservé, seul integrity migrer
 - [[decision-knowledge-graph-deferred]] — Knowledge graph différé, wikilinks Obsidian suffisent avant 100 notes

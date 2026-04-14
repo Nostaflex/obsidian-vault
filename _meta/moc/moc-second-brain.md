@@ -2,12 +2,12 @@
 type: moc
 tag: second-brain
 tags: [second-brain, vault, pipeline]
-notes_count: 27
+notes_count: 28
 last_updated: 2026-04-13
 scope: "auto-generated MOC for tag #second-brain"
 ---
 # MOC — #second-brain
-Generated: 2026-04-13 | 27 notes
+Generated: 2026-04-13 | 28 notes
 
 - [[anti-bug-claude-cli-keychain-launchd]] — Keychain verrouillé hors session empêche auth Claude launchd
 - [[anti-bug-claude-jsonl-schema]] — Contenu messages dans d['message']['content'] pas d['content']
@@ -15,6 +15,7 @@ Generated: 2026-04-13 | 27 notes
 - [[anti-bug-launchd-icloud-tcc]] — LimitLoadToSessionType Aqua résout accès iCloud et keychain
 - [[anti-bug-mcp-server-scoped-vscode-only]] — Serveurs MCP settings.json invisibles aux scripts launchd
 - [[architecture-dual-profile-vscode]] — Deux profils VSCode séparent données Personal et Work Renault
+- [[architecture-paper-synthesizer]] — paper_synthesizer.py produit concept extractions atomiques Tier S/A/B
 - [[convention-log-anti-re-ingestion]] — LOG.md append-only empêche re-ingestion fichiers déjà traités
 - [[decision-architecture-hybride-second-brain]] — Architecture hybride Algo+LLM injection directe trois guardrails
 - [[decision-knowledge-graph-deferred]] — Knowledge graph différé, wikilinks suffisent avant 100 notes actives

@@ -1,0 +1,23 @@
+{
+  "run_date": "2026-04-14",
+  "week": 16,
+  "model": "claude-haiku-4-5-20251001",
+  "api": "anthropic-claude-haiku-batch",
+  "domains_processed": [
+    "ai",
+    "iot",
+    "cloud",
+    "ecommerce"
+  ],
+  "papers_processed": 45,
+  "concepts_extracted": 87,
+  "tier_distribution": {
+    "S": 31,
+    "A": 54,
+    "B": 2
+  },
+  "digests_created": 4,
+  "estimated_tokens": 95088,
+  "estimated_cost_usd": 0.0,
+  "errors": []
+}

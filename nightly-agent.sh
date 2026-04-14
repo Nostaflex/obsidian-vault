@@ -11,16 +11,55 @@
 #   bash ~/Documents/Obsidian/KnowledgeBase/nightly-agent.sh
 set -euo pipefail
 
-# ── Concurrent guard (mkdir lock) ────────────────────────────────────────────
+# ── Concurrent guard (mkdir lock + PID + age fallback) ──────────────────────
 # Empêche deux instances simultanées (ex: launchd retry pendant un run long).
 # mkdir est atomique sur tout système POSIX — pas de dépendance externe.
+# TD-2026-018 : détection lock orphelin via PID (kill -9 / OOM / crash launchd
+# ne déclenche pas trap EXIT → lock jamais nettoyé → nightly skip silencieux).
 LOCKDIR="${HOME}/Documents/Obsidian/KnowledgeBase/_logs/nightly.run"
+LOCK_LOG="${HOME}/Documents/Obsidian/KnowledgeBase/_logs/nightly-agent.log"
+LOCK_MAX_AGE_SECONDS=$((24 * 3600))  # 24h — un vrai run ne dure jamais si longtemps
+
 if ! mkdir "$LOCKDIR" 2>/dev/null; then
-  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Nightly already running (lock held) — skip" \
-    >> "${HOME}/Documents/Obsidian/KnowledgeBase/_logs/nightly-agent.log"
-  exit 0
+  # Lock présent : orphelin ou légitime ?
+  STALE=0
+  STALE_REASON=""
+  LOCK_PID=$(cat "$LOCKDIR/pid" 2>/dev/null || echo "")
+  if [ -n "$LOCK_PID" ] && ! kill -0 "$LOCK_PID" 2>/dev/null; then
+    STALE=1
+    STALE_REASON="pid $LOCK_PID dead"
+  else
+    # Pas de PID lisible OU PID vivant : vérifier l'âge du lock
+    if [ -d "$LOCKDIR" ]; then
+      LOCK_MTIME=$(stat -f %m "$LOCKDIR" 2>/dev/null || stat -c %Y "$LOCKDIR" 2>/dev/null || echo 0)
+      NOW=$(date +%s)
+      AGE=$((NOW - LOCK_MTIME))
+      if [ "$AGE" -gt "$LOCK_MAX_AGE_SECONDS" ]; then
+        STALE=1
+        STALE_REASON="age ${AGE}s > ${LOCK_MAX_AGE_SECONDS}s"
+      fi
+    fi
+  fi
+
+  if [ "$STALE" -eq 1 ]; then
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] ⚠️  Lock orphelin détecté ($STALE_REASON) — réclamation" \
+      >> "$LOCK_LOG"
+    rm -rf "$LOCKDIR"
+    if ! mkdir "$LOCKDIR" 2>/dev/null; then
+      echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Impossible de réclamer le lock — skip" \
+        >> "$LOCK_LOG"
+      exit 1
+    fi
+  else
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] Nightly already running (lock held, pid=$LOCK_PID) — skip" \
+      >> "$LOCK_LOG"
+    exit 0
+  fi
 fi
-trap "rmdir '$LOCKDIR' 2>/dev/null || true" EXIT
+
+# Écrire le PID courant dans le lock pour diagnostic futur
+echo "$$" > "$LOCKDIR/pid"
+trap "rm -rf '$LOCKDIR' 2>/dev/null || true" EXIT
 
 VAULT="$HOME/Documents/Obsidian/KnowledgeBase"
 PROMPT="$VAULT/.nightly-prompt.md"
