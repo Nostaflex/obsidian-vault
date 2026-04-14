@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.second-brain.papers-weekly.plist
+  ────────────────────────────────────────────────────────────────────────────
+  Lance paper-synthesizer.sh tous les dimanche à 10h00 (heure locale).
+  Convertit les papers accumulés dans _inbox/raw/papers/ → concepts atomiques
+  Tier S/A dans _inbox/raw/concepts/, qui sont ensuite promus vers le vault
+  par le nightly agent (étape 2A de .nightly-prompt.md, cap 15/run FIFO).
+
+  Cadence rationale : dimanche post weekly-extractor (samedi 9h), avant le
+  nightly de dimanche 2h17 lundi (qui pourra commencer à promouvoir).
+
+  Pré-requis :
+    1. ANTHROPIC_API_KEY dans Keychain :
+       security add-generic-password -U -a $USER -s anthropic-api-key -w "sk-ant-..."
+    2. paper-synthesizer.sh exécutable (chmod +x dans le repo)
+
+  Installation :
+    cp _meta/launchd/com.second-brain.papers-weekly.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.second-brain.papers-weekly.plist
+
+  Vérification :
+    launchctl list | grep papers-weekly
+
+  Test manuel :
+    launchctl start com.second-brain.papers-weekly
+    tail -f ~/Documents/Obsidian/KnowledgeBase/_logs/papers-weekly.log
+
+  Désactivation :
+    launchctl unload ~/Library/LaunchAgents/com.second-brain.papers-weekly.plist
+    rm ~/Library/LaunchAgents/com.second-brain.papers-weekly.plist
+
+  TD-2026-019 (γ) : résoud l'orphan paper_synthesizer en le branchant à launchd.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.second-brain.papers-weekly</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>cd "$HOME/Documents/Obsidian/KnowledgeBase" &amp;&amp; ./paper-synthesizer.sh &gt;&gt; "$HOME/Documents/Obsidian/KnowledgeBase/_logs/papers-weekly.log" 2&gt;&amp;1</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>0</integer>
+    <key>Hour</key>
+    <integer>10</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    <key>HOME</key>
+    <string>/Users/djemildavid</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/djemildavid/Documents/Obsidian/KnowledgeBase/_logs/papers-weekly.stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/djemildavid/Documents/Obsidian/KnowledgeBase/_logs/papers-weekly.stderr.log</string>
+</dict>
+</plist>
