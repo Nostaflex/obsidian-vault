@@ -1,5 +1,24 @@
 # Maintenance Report — Knowledge Base
 
+## Auto-corrections 2026-04-13
+- `[[decision-bash-vs-python-boundary.md]]` → `[[decision-bash-vs-python-boundary]]` dans projects/second-brain/architecture-token-efficient-skills.md (suffixe .md retiré)
+- `[[wiki]]` ajouté à lint-ignore.txt (exemple illustratif dans table de future-mcp-obsidian-server.md)
+
+## Orphelines 2026-04-13
+- Aucune éligible — toutes les notes ont < 30 jours (vault créé 2026-04-11)
+
+## Wikilinks cassés 2026-04-13
+- Tous les liens cassés restants sont couverts par lint-ignore.txt (exemples illustratifs)
+
+## Candidats archivage 2026-04-13
+- Aucun — toutes les notes ont < 90 jours
+
+## Contradictions potentielles 2026-04-13
+- Aucune détectée
+
+## Review queue 2026-04-13
+- weekly-review-W16.md déjà à jour (3 fleeting les plus anciennes du 2026-04-12)
+
 ---
 
 ## Orphelines 2026-04-11
@@ -101,3 +120,34 @@ Aucune contradiction détectée sur les 38 notes actives.
 
 ### Auto-corrections silencieuses 2026-04-12
 4 liens nus annotés dans discovery-nightly-agent-architecture.md, decision-weekly-extractor-approach-c.md, discovery-mcp-tools-print-mode.md, pattern-inbox-raw-layer.md.
+
+---
+
+## Lint 2026-04-13
+
+### Orphelines 2026-04-13
+10 notes orphelines identifiées (aucune référencée dans ## Liens d'autres notes) :
+- universal/research/digest-2026-W15.md
+- universal/mcp-vscode-dedicated-file.md
+- universal/pattern-subagent-driven-development.md
+- universal/concept-context-preservation-after-mitosis.md
+- universal/anti-bug-zip-executable-bit-lost.md
+- universal/anti-bug-set-e-jq-missing-file.md
+- projects/gpparts/anti-bug-checkout-race-condition.md
+- projects/second-brain/anti-bug-grep-confidentiel-faux-positif.md
+- projects/second-brain/anti-bug-claude-jsonl-schema.md
+- projects/second-brain/decision-bash-vs-python-boundary.md
+
+_Toutes créées < 30j — pas de marquage archive-candidate._
+
+### Wikilinks cassés 2026-04-13
+9 liens cassés détectés par integrity-check.sh — tous présents dans _meta/lint-ignore.txt (faux positifs documentés). 5 nouvelles entrées ajoutées à lint-ignore (note, future-managed-agents-anthropic|alias, tech-debt-registry#anchors). Aucune action requise.
+
+### Candidats archivage 2026-04-13
+Vault < 30j — aucun candidat éligible (fenêtre 90j).
+
+### Contradictions potentielles 2026-04-13
+Aucune contradiction détectée sur les 42 notes actives.
+
+### Auto-corrections silencieuses 2026-04-13
+0 corrections nécessaires (toutes les notes ont déjà ## Liens).
