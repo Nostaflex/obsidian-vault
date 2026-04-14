@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.second-brain.papers-fetch.plist
+  ────────────────────────────────────────────────────────────────────────────
+  Lance corpus_collector.py tous les samedis à 8h00 (heure locale).
+  Fetch papers depuis arXiv + Semantic Scholar pour les 4 domaines configurés
+  (ai, iot, cloud, ecommerce), max 5 papers/domaine = ~20 papers/semaine,
+  filtre min-score 0.3, fenêtre 30 derniers jours.
+
+  Cadence : alimente _inbox/raw/papers/ avant que paper-synthesizer.sh
+  ne tourne (dimanche 10h). Évite que paper-synth tourne à vide.
+
+  Chronologie weekly :
+    Sam 8h00  : corpus_collector → fetch ~20 papers → _inbox/raw/papers/
+    Sam 9h00  : weekly-extractor (existant) → claude-mem extraction
+    Dim 10h00 : paper-synthesizer (installé 2026-04-14) → concepts
+    Lun 2h17  : nightly LLM → promote concepts (cap 15/run) → vault
+
+  Pré-requis : aucun (pas de clé API requise — arXiv + S2 publics)
+    - Semantic Scholar peut return HTTP 429 sans API key (ratelimited)
+    - Fallback arXiv suffit pour la collecte
+
+  Installation :
+    cp _meta/launchd/com.second-brain.papers-fetch.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.second-brain.papers-fetch.plist
+
+  Vérification :
+    launchctl list | grep papers-fetch
+
+  Test manuel :
+    launchctl start com.second-brain.papers-fetch
+    tail -f ~/Documents/Obsidian/KnowledgeBase/_logs/papers-fetch.log
+
+  Désactivation :
+    launchctl unload ~/Library/LaunchAgents/com.second-brain.papers-fetch.plist
+    rm ~/Library/LaunchAgents/com.second-brain.papers-fetch.plist
+
+  TD-2026-021 : résoud l'orphan corpus_collector en le branchant à launchd.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.second-brain.papers-fetch</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>cd "$HOME/Documents/Obsidian/KnowledgeBase" &amp;&amp; python3 corpus_collector.py &gt;&gt; "$HOME/Documents/Obsidian/KnowledgeBase/_logs/papers-fetch.log" 2&gt;&amp;1</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>6</integer>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    <key>HOME</key>
+    <string>/Users/djemildavid</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/djemildavid/Documents/Obsidian/KnowledgeBase/_logs/papers-fetch.stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/djemildavid/Documents/Obsidian/KnowledgeBase/_logs/papers-fetch.stderr.log</string>
+</dict>
+</plist>
