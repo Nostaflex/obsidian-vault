@@ -49,4 +49,8 @@ SIM1 et AVGen-Bench pointent un problème méthodologique. Le premier montre qu'
 - [Seeing but Not Thinking: Routing Distraction in Multimodal Mixture-of-Experts](http://arxiv.org/abs/2604.08541v1)
 - [SIM1: Physics-Aligned Simulator as Zero-Shot Data Scaler in Deformable Worlds](http://arxiv.org/abs/2604.08544v1)
 
+## Liens
+- [[A-2604-07988v1-2]] — agent self-diagnosis via introspection rejoint le thème "discernement décisionnel" des agents W16
+- [[concept-physics-constraints-eliminate-nocturnal-solar-artifacts]] — ancrage physique comme contrainte de fidélité, écho direct à SIM1 et AVGen-Bench
+
 <!-- generated: 2026-04-14 -->

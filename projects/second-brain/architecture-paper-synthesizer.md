@@ -26,5 +26,6 @@ domain: second-brain
 - [[decision-weekly-extractor-approach-c]] — approche C validée
 - [[feature-weekly-extractor-first-run]] — premier run 45 concepts
 - [[decision-architecture-hybride-second-brain]] — architecture globale
+- [[A-2604-08123v1-1]] — fragmentation pipeline IA en micro-services autonomes, pattern applicable au paper_synthesizer lui-même
 
 <!-- Migré depuis memory/project_paper-synthesizer-pipeline.md (2026-04-13) -->

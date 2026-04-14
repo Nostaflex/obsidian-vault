@@ -1,5 +1,6 @@
 # LOG — Knowledge Base
 
+## [2026-04-14] lint | orphelines: 15 | contradictions: 0 | candidats-archivage: 0 | auto-corrections: 1
 ## [2026-04-13] lint | orphelines: 0 | contradictions: 0 | candidats-archivage: 0 | auto-corrections: 2
 
 _Append-only — mis à jour par l'agent nocturne après chaque ingestion._
@@ -27,3 +28,22 @@ _Ne jamais éditer ou supprimer d'entrées existantes._
 ## [2026-04-12] rebuild | INDEX.md → 38 notes | MOC générés: 7 (#second-brain #architecture #discovery #anti-bug #gpparts #decision #nightly-agent)
 ## [2026-04-13] lint | orphelines: 10 | contradictions: 0 | candidats-archivage: 0 | auto-corrections: 0
 ## [2026-04-13] rebuild | INDEX.md → 42 notes | MOC générés: 8 (#second-brain #architecture #discovery #decision #anti-bug #security #gpparts #nightly-agent)
+## [2026-04-14] ingest | raw/concepts/A-2604-07760v1-1.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-07767v1-1.md → 1 note (synthesizer) → projects/gpparts/
+## [2026-04-14] ingest | raw/concepts/A-2604-07767v1-2.md → 1 note (synthesizer) → projects/gpparts/
+## [2026-04-14] ingest | raw/concepts/A-2604-07988v1-1.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-07988v1-2.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08123v1-1.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08123v1-2.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08182v1-1.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08182v1-2.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08188v1-1.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08188v1-2.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08197v1-1.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08197v1-2.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08199v1-1.md → 1 note (synthesizer) → universal/
+## [2026-04-14] ingest | raw/concepts/A-2604-08199v1-2.md → 1 note (synthesizer) → universal/
+## [2026-04-14] overflow | 70 A-track files → _inbox/overflow/ (cap 15 reached)
+## [2026-04-14] ingest | raw/papers/ai/physics_informed_state_space_models.md → 1 note → universal/
+## [2026-04-14] skip | raw/articles/nlm-summary-ai-W2026-16.md → error output (no content)
+## [2026-04-15] lint | orphelines: 16 (0 >30j) | contradictions: 0 | candidats-archivage: 0 | auto-corrections: 0

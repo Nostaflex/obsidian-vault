@@ -194,6 +194,8 @@ Pour la partie grounding NotebookLM du spec hybride :
 - [[architecture-dual-profile-vscode]] — comment les secrets sont scopés
 - [[discovery-nightly-agent-architecture]] — architecture actuelle à remplacer/complémenter
 - [[decision-mind-free-kit-first-strategy]] — stratégie de priorisation (quand est-ce qu'on creuse cela)
+- [[A-2604-07767v1-1]] — cloud strategic control + edge tactical autonomy, même dichotomie que Managed Agents vs Claude Code local
+- [[A-2604-07988v1-1]] — log partagé pré-exécution pour agents autonomes, pertinent pour observabilité Managed Agents
 
 ---
 

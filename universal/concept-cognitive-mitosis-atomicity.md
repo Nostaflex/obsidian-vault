@@ -20,5 +20,6 @@ La mitose cognitive répond à l'échec du « fourre-tout » : une note qui cont
 
 ## Liens
 - [[concept-collectors-fallacy-accumulation-passive]] — la mitose est la réponse opérationnelle à la Collector's Fallacy
+- [[A-2604-08123v1-1]] — fragmentation pipeline IA en services autonomes, application architecturale du principe de mitose cognitive
 
 <!-- generated: 2026-04-12 -->

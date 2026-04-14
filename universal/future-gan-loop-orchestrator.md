@@ -116,6 +116,8 @@ S'applique à TOUS les projets Claude Code de l'utilisateur (doctrine, pas juste
 - [[pattern-subagent-driven-development]] — brique de base Phase 3
 - [[architecture-token-efficient-skills]] — principes shell-first compatibles
 - [[decision-bash-vs-python-boundary]] — conventions pour le skill orchestrateur (probable bash-first)
+- [[A-2604-07988v1-1]] — log partagé pré-exécution, mécanisme d'auditabilité applicable au GAN loop (traçabilité generator/discriminator)
+- [[A-2604-07988v1-2]] — auto-diagnostic agent via introspection du log, feedback loop comparable au discriminator adversarial
 
 ## Références externes
 

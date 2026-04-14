@@ -179,6 +179,7 @@ Un skill "check everything" qui lit 20 fichiers échoue l'audit token.
 - [[audit-setup-claude-code-2026-04-13]] — audit source qui a identifié les 3 skills
 - [[decision-bash-vs-python-boundary]] — règles bash/python du projet
 - [[tech-debt-registry]] — registry des dettes techniques
+- [[A-2604-08123v1-2]] — model pooling inter-workflow réduit la mémoire, même logique de mutualisation que le shell-first pre-processing
 
 ## Tags
 #architecture #skills #tokens #cost-efficiency #decision #ADR

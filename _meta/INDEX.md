@@ -1,117 +1,144 @@
 # INDEX — Knowledge Base
-Updated: 2026-04-13T22:42:00+02:00 | Active: 45 notes | Ceiling: 300
+Updated: 2026-04-15T00:35:00+02:00 | Active: 67 notes | Ceiling: 300
 
 ## Par projet
-### universal (10)
-- anti-bug-set-e-jq-missing-file — set -euo pipefail + jq crashe si fichier absent
-- anti-bug-zip-executable-bit-lost — chmod +x AVANT zip sinon bit exécutable perdu
-- concept-cognitive-mitosis-atomicity — découper source multi-concepts en N notes atomiques
-- concept-collectors-fallacy-accumulation-passive — accumulation passive imite compréhension sans produire
-- concept-context-preservation-after-mitosis — annotation lien obligatoire pour contexte post-mitose
-- mcp-vscode-dedicated-file — VSCode MCP config dans fichier dédié, pas settings.json
-- pattern-subagent-driven-development — 1 subagent par tâche + reviewers valide qualité
-- prix-centimes-convention — prix toujours en centimes entiers, formatPrice() seul
-- research/digest-2026-W15 — top papers W15 2026 AI/IoT/Cloud/E-commerce curatés
-- vat-guadeloupe-8-5 — TVA Guadeloupe 8.5%, distinct de métropole 20%
 
-### projects/gpparts (4)
-- anti-bug-checkout-race-condition — setOrderPlaced(true) AVANT clearCart sinon redirection
-- discovery-facture-electronique-fr-2026 — réception facture électronique obligatoire France sept 2026
-- discovery-nextjs-16-breaking-changes — breaking changes Next.js 16 à auditer avant migration
-- nextjs-15-breaking-changes-cache — fetch no-store par défaut, next/headers retourne Promise
+### universal (24)
+- [[A-2604-07760v1-1]] — Fusionner radiateur, panneaux solaires et processeurs dans une structure unique
+- [[A-2604-07988v1-1]] — Agents LLM publient actions dans log partagé avant exécution
+- [[A-2604-07988v1-2]] — Défaillances agent diagnostiquées par autoanalyse LLM du log
+- [[A-2604-08123v1-1]] — Fragmentation pipelines IA en services autonomes = efficacité compute
+- [[A-2604-08123v1-2]] — Partage composants stables inter-workflow réduit empreinte mémoire cluster
+- [[A-2604-08182v1-1]] — GPU power varie par paliers DVFS, pas linéairement
+- [[A-2604-08182v1-2]] — TCO 5 ans dépend autant électricité que matériel
+- [[A-2604-08188v1-1]] — Surfaces transmissives intelligentes amplifient capacité spectrale multi-antenne
+- [[A-2604-08188v1-2]] — Contrainte énergétique restructure design surfaces RIS
+- [[A-2604-08197v1-1]] — Diffusion discrète génère candidats faisceau mmWave efficacement
+- [[A-2604-08197v1-2]] — Gestion faisceau sondage limité = MDP alignement mmWave
+- [[A-2604-08199v1-1]] — Modèles de monde capturent interactions trafic mobile / paramètres réseau
+- [[A-2604-08199v1-2]] — Fusion image-séquence multimodale renforce représentation spatiale
+- [[anti-bug-set-e-jq-missing-file]] — set -euo pipefail + jq fichier absent = exit silencieux
+- [[anti-bug-zip-executable-bit-lost]] — ZIP perd bit exécutable si chmod +x non appliqué
+- [[concept-cognitive-mitosis-atomicity]] — Mitose cognitive : N notes indépendantes depuis 1 source multi-concepts
+- [[concept-collectors-fallacy-accumulation-passive]] — Collector's Fallacy : accumulation ≠ compréhension
+- [[concept-context-preservation-after-mitosis]] — ## Liens annoté = mécanisme préservation contexte post-mitose
+- [[concept-physics-constraints-eliminate-nocturnal-solar-artifacts]] — Contraintes physiques éliminent artefacts solaires nocturnes dans DL
+- [[future-gan-loop-orchestrator]] — GAN Loop orchestrator pour heavy dev — design deferred
+- [[mcp-vscode-dedicated-file]] — VSCode refuse MCP dans settings.json — fichier mcp.json dédié requis
+- [[pattern-subagent-driven-development]] — Subagent-Driven Development : 1 subagent par tâche indépendante
+- [[prix-centimes-convention]] — Tous les prix sont des entiers en centimes, jamais de float
+- [[vat-guadeloupe-8-5]] — TVA Guadeloupe (971) : 8.5%, différent du taux métropolitain
 
-### projects/second-brain (31)
-- anti-bug-claude-cli-keychain-launchd — login.keychain-db verrouillé hors session interactive
-- anti-bug-claude-jsonl-schema — contenu dans message.content, pas d.content
-- anti-bug-grep-confidentiel-faux-positif — grep matche titre H1 INDEX, pas body
-- anti-bug-launchd-icloud-tcc — fix: LimitLoadToSessionType Aqua dans plist
-- anti-bug-mcp-server-scoped-vscode-only — MCP servers actifs uniquement dans env qui charge config
-- architecture-dual-profile-vscode — profil Personal Claude Code, profil Work Copilot Business
-- architecture-paper-synthesizer — concept extractions atomiques via Gemini, anti-Collector's-Fallacy
-- architecture-token-efficient-skills — ADR skills token-efficient pour Claude Code
-- audit-setup-claude-code-2026-04-13 — audit complet setup Claude Code, score B+
-- convention-log-anti-re-ingestion — LOG.md append-only empêche re-ingestion fichiers
-- decision-architecture-hybride-second-brain — algo+LLM, injection directe vault, 3 guardrails
-- decision-bash-vs-python-boundary — garder mix bash orchestration / Python traitement
-- decision-knowledge-graph-deferred — différé à 100+ notes, wikilinks déjà graphe implicite
-- decision-mind-free-kit-first-strategy — Guanateck vend Second Brain Kit via Gumroad
-- decision-vault-seed-runtime-pattern — vault/ seed en git, runtime jamais versionné
-- decision-weekly-extractor-approach-c — session interactive car --print bloque MCP tools
-- discovery-claude-mem-architecture — SQLite local, ChromaDB 13Mo, daemon HTTP
-- discovery-claude-mem-privacy-risk — obs non compartimentées par zone sensible
-- discovery-mcp-tools-print-mode — claude --print n'initialise pas plugin system
-- discovery-nightly-agent-architecture — launchd 2h17, integrity-check, output _inbox/agent/
-- discovery-nightly-vault-api-transit — data flow audité, protection = guardrail prompt
-- discovery-second-brain-v4-gaps-fixes — 5 gaps v3 corrigés, anti-re-ingestion validée
-- discovery-vault-failles-audit — 4 failles structurelles identifiées, gaps implémentation
-- feature-enrichment-pipeline-approach-b — approche B watchlist+signaux, PR#5 mergé
-- feature-weekly-extractor-first-run — 350+ obs traitées, 45 concepts retenus, 14 filtrés
-- future-managed-agents-anthropic — agents hébergés Anthropic avec container sandbox
-- future-mcp-obsidian-server — MCP server Obsidian pour accès vault natif
-- guardrail-nightly-prompt — prompt non-annulable par inbox, risque résiduel documenté
-- icloud-work-nosync-protection — .nosync naming + xattr, brctl status vérification
-- pattern-inbox-raw-layer — zone dépôt articles/docs/repos, ingestion auto Étape 2
-- tech-debt-registry — registre dette technique pipeline second-brain
+### universal/research (5)
+- [[digest-2026-W15]] — Research Digest W15
+- [[digest-ai-W16]] — Digest AI W16
+- [[digest-cloud-W16]] — Digest Cloud W16
+- [[digest-ecommerce-W16]] — Digest ecommerce W16
+- [[digest-iot-W16]] — Digest IoT W16
+
+### projects/gpparts (6)
+- [[A-2604-07767v1-1]] — Contrôle stratégique cloud + autonomie périphérique : architecture hybride edge/cloud
+- [[A-2604-07767v1-2]] — Agents périphériques perçoivent UI en continu pour coordination sans serveur
+- [[anti-bug-checkout-race-condition]] — setOrderPlaced(true) AVANT clearCart() — inverser cause race condition
+- [[discovery-facture-electronique-fr-2026]] — Réception factures électroniques obligatoire en France au 1er sept 2026
+- [[discovery-nextjs-16-breaking-changes]] — Breaking changes Next.js 16 identifiés comme points de friction
+- [[nextjs-15-breaking-changes-cache]] — Next.js 15 : fetch() no-store par défaut, async headers/cookies
+
+### projects/second-brain (32)
+- [[anti-bug-claude-cli-keychain-launchd]] — Credentials Claude dans login.keychain-db — inaccessibles depuis launchd
+- [[anti-bug-claude-jsonl-schema]] — Conversations Claude dans ~/.claude/projects/ avec répertoires path-encodés
+- [[anti-bug-grep-confidentiel-faux-positif]] — grep "confidentiel" matche titre H1 — faux positif integrity-check.sh
+- [[anti-bug-launchd-icloud-tcc]] — macOS bloque launchd iCloud Drive via TCC — Full Disk Access requis
+- [[anti-bug-mcp-server-scoped-vscode-only]] — Serveurs MCP settings.json actifs globalement, pas seulement VS Code
+- [[architecture-dual-profile-vscode]] — Deux profils VSCode Personal/Work avec LLM et accès vault distincts
+- [[architecture-paper-synthesizer]] — paper_synthesizer.py produit extractions atomiques Tier S/A/B
+- [[architecture-token-efficient-skills]] — ADR : design token-efficient pour skills custom Claude Code
+- [[audit-setup-claude-code-2026-04-13]] — Audit complet setup Claude Code Second Brain 2026-04-13
+- [[convention-log-anti-re-ingestion]] — LOG.md append-only empêche re-ingestion des sources déjà traitées
+- [[decision-architecture-hybride-second-brain]] — Architecture hybride Algo+LLM choisie : injection directe vault
+- [[decision-bash-vs-python-boundary]] — ADR : frontière Bash vs Python dans le pipeline Second Brain
+- [[decision-knowledge-graph-deferred]] — Knowledge Graph évalué et différé pour Second Brain
+- [[decision-mind-free-kit-first-strategy]] — Guanateck vend Second Brain Kit en vente unique Gumroad
+- [[decision-vault-seed-runtime-pattern]] — Repo git contient vault/ source de vérité pour initialisation
+- [[decision-weekly-extractor-approach-c]] — Weekly extractor = session Claude interactive (Approach C)
+- [[discovery-claude-mem-architecture]] — claude-mem utilise SQLite local dans ~/.claude-mem/ — offline
+- [[discovery-claude-mem-privacy-risk]] — Observations claude-mem non compartimentées par zone sensible
+- [[discovery-mcp-tools-print-mode]] — MCP Tools inaccessibles en mode --print (non-interactif)
+- [[discovery-nightly-agent-architecture]] — launchd → nightly-agent.sh → claude --print → vault
+- [[discovery-nightly-vault-api-transit]] — nightly-agent.sh concatène vault et transmet à API Anthropic
+- [[discovery-second-brain-v4-gaps-fixes]] — 5 gaps Karpathy audit corrigés dans Second Brain v4
+- [[discovery-vault-failles-audit]] — 4 failles structurelles identifiées dans audit vault 2026-04-10
+- [[feature-enrichment-pipeline-approach-b]] — Approche B : enrichissement vault via watchlist + corpus sans scraping
+- [[feature-weekly-extractor-first-run]] — Weekly extractor opérationnel — 45 concepts extraits au premier run
+- [[future-managed-agents-anthropic]] — Managed Agents Anthropic — future implementation deferred
+- [[future-mcp-obsidian-server]] — MCP Obsidian Server MarkusPfundstein — future implementation deferred
+- [[guardrail-nightly-prompt]] — Guardrail non-annulable nightly prompt pour _work.nosync/
+- [[icloud-work-nosync-protection]] — Double protection iCloud pour _work.nosync/ (gitignore + .nosync)
+- [[meta-purpose-lab-for-enterprise]] — Second Brain : triple vocation intentionnelle (lab + kit + référence)
+- [[pattern-inbox-raw-layer]] — _inbox/raw/ : zone de dépôt Karpathy raw input layer
+- [[tech-debt-registry]] — Tech Debt Registry Second Brain Pipeline
 
 ## Par type
-### decisions (8)
-- decision-architecture-hybride-second-brain — algo+LLM, injection directe vault
-- decision-bash-vs-python-boundary — garder mix bash orchestration / Python traitement
-- decision-knowledge-graph-deferred — différé à 100+ notes
-- decision-mind-free-kit-first-strategy — Guanateck vend Kit via Gumroad
-- decision-vault-seed-runtime-pattern — vault/ seed en git, runtime dynamique
-- decision-weekly-extractor-approach-c — session interactive car --print bloque MCP
-- architecture-token-efficient-skills — ADR skills token-efficient
-- feature-enrichment-pipeline-approach-b — approche B watchlist+signaux
 
-### patterns (3)
-- pattern-inbox-raw-layer — zone dépôt sources externes, ingestion auto
-- pattern-subagent-driven-development — 1 subagent/tâche + reviewers
-- icloud-work-nosync-protection — double protection .nosync + xattr
-
-### discoveries (10)
-- discovery-claude-mem-architecture — SQLite local, ChromaDB, daemon HTTP
-- discovery-claude-mem-privacy-risk — obs non compartimentées
-- discovery-facture-electronique-fr-2026 — e-invoicing obligatoire sept 2026
-- discovery-mcp-tools-print-mode — --print bloque plugin system
-- discovery-nextjs-16-breaking-changes — breaking changes Next.js 16
-- discovery-nightly-agent-architecture — launchd 2h17, workflow complet
-- discovery-nightly-vault-api-transit — vault transit vers API Anthropic
-- discovery-second-brain-v4-gaps-fixes — 5 gaps v3 corrigés
-- discovery-vault-failles-audit — 4 failles structurelles
-- feature-weekly-extractor-first-run — 350+ obs, 45 concepts retenus
+### concept (19)
+- [[A-2604-07760v1-1]] — Fusion thermique/solaire/compute en structure unique
+- [[A-2604-07767v1-1]] — Contrôle stratégique cloud + autonomie périphérique
+- [[A-2604-07767v1-2]] — Agents périphériques perçoivent UI en continu
+- [[A-2604-07988v1-1]] — Agents LLM publient actions dans log partagé avant exécution
+- [[A-2604-07988v1-2]] — Défaillances agent diagnostiquées par autoanalyse LLM du log
+- [[A-2604-08123v1-1]] — Fragmentation pipelines IA = efficacité compute
+- [[A-2604-08123v1-2]] — Partage composants stables inter-workflow réduit mémoire cluster
+- [[A-2604-08182v1-1]] — GPU power varie par paliers DVFS, pas linéairement
+- [[A-2604-08182v1-2]] — TCO 5 ans dépend autant électricité que matériel
+- [[A-2604-08188v1-1]] — Surfaces transmissives amplifient capacité spectrale multi-antenne
+- [[A-2604-08188v1-2]] — Contrainte énergétique restructure design surfaces RIS
+- [[A-2604-08197v1-1]] — Diffusion discrète génère candidats faisceau mmWave
+- [[A-2604-08197v1-2]] — Gestion faisceau = MDP alignement mmWave
+- [[A-2604-08199v1-1]] — Modèles de monde : trafic mobile ↔ paramètres réseau
+- [[A-2604-08199v1-2]] — Fusion image-séquence multimodale renforce représentation spatiale
+- [[concept-cognitive-mitosis-atomicity]] — Mitose cognitive : N notes indépendantes
+- [[concept-collectors-fallacy-accumulation-passive]] — Collector's Fallacy : accumulation ≠ compréhension
+- [[concept-context-preservation-after-mitosis]] — ## Liens annoté = mécanisme préservation post-mitose
+- [[concept-physics-constraints-eliminate-nocturnal-solar-artifacts]] — Contraintes physiques éliminent artefacts solaires DL
 
 ### anti-bug (8)
-- anti-bug-checkout-race-condition — setOrderPlaced AVANT clearCart
-- anti-bug-claude-cli-keychain-launchd — keychain verrouillé hors session
-- anti-bug-claude-jsonl-schema — message.content pas d.content
-- anti-bug-grep-confidentiel-faux-positif — grep matche titres H1
-- anti-bug-launchd-icloud-tcc — fix LimitLoadToSessionType Aqua
-- anti-bug-mcp-server-scoped-vscode-only — MCP scopé à l'env actif
-- anti-bug-set-e-jq-missing-file — set -e + jq fichier absent crashe
-- anti-bug-zip-executable-bit-lost — chmod +x avant zip obligatoire
+- [[anti-bug-checkout-race-condition]] — setOrderPlaced avant clearCart — race condition
+- [[anti-bug-claude-cli-keychain-launchd]] — Keychain inaccessible depuis launchd
+- [[anti-bug-claude-jsonl-schema]] — Schéma réel JSONL conversations Claude Code
+- [[anti-bug-grep-confidentiel-faux-positif]] — grep "confidentiel" = faux positif sur titre H1
+- [[anti-bug-launchd-icloud-tcc]] — launchd bloqué TCC iCloud Drive
+- [[anti-bug-mcp-server-scoped-vscode-only]] — MCP settings.json = scope global
+- [[anti-bug-set-e-jq-missing-file]] — set -euo pipefail + jq fichier absent = exit silencieux
+- [[anti-bug-zip-executable-bit-lost]] — ZIP perd bit exécutable
 
-### concept (3)
-- concept-cognitive-mitosis-atomicity — N notes indépendantes depuis 1 source
-- concept-collectors-fallacy-accumulation-passive — accumulation ≠ compréhension
-- concept-context-preservation-after-mitosis — annotation préserve contexte
+### decision (8)
+- [[decision-architecture-hybride-second-brain]] — Architecture hybride Algo+LLM
+- [[decision-bash-vs-python-boundary]] — Frontière Bash vs Python pipeline Second Brain
+- [[decision-knowledge-graph-deferred]] — Knowledge Graph différé
+- [[decision-mind-free-kit-first-strategy]] — Kit Gumroad first strategy
+- [[decision-vault-seed-runtime-pattern]] — Pattern Vault Seed / Runtime
+- [[decision-weekly-extractor-approach-c]] — Weekly extractor Approach C
+- [[feature-enrichment-pipeline-approach-b]] — Approche B enrichissement vault
+- [[feature-weekly-extractor-first-run]] — Weekly extractor first run validé
 
-### architecture (3)
-- architecture-dual-profile-vscode — profils Personal/Work isolés
-- architecture-paper-synthesizer — concept extractions atomiques Gemini
-- guardrail-nightly-prompt — prompt non-annulable
+### discovery (8)
+- [[discovery-claude-mem-architecture]] — claude-mem SQLite local offline
+- [[discovery-claude-mem-privacy-risk]] — claude-mem : risque privacy observations non compartimentées
+- [[discovery-facture-electronique-fr-2026]] — Facture électronique FR obligatoire sept 2026
+- [[discovery-mcp-tools-print-mode]] — MCP Tools indisponibles en --print
+- [[discovery-nightly-agent-architecture]] — Architecture complète nightly agent
+- [[discovery-nightly-vault-api-transit]] — Vault transit API Anthropic via nightly
+- [[discovery-second-brain-v4-gaps-fixes]] — 5 gaps Karpathy corrigés
+- [[discovery-vault-failles-audit]] — 4 failles structurelles audit vault
 
-### bridge (0)
-_(aucune note bridge pour le moment)_
+### pattern (3)
+- [[icloud-work-nosync-protection]] — Double protection iCloud _work.nosync/
+- [[pattern-inbox-raw-layer]] — _inbox/raw/ raw input layer
+- [[pattern-subagent-driven-development]] — Subagent-Driven Development multi-fichiers
 
-### other (10)
-- audit-setup-claude-code-2026-04-13 — audit complet setup, score B+
-- convention-log-anti-re-ingestion — LOG.md append-only
-- future-managed-agents-anthropic — agents hébergés Anthropic
-- future-mcp-obsidian-server — MCP server Obsidian natif
-- mcp-vscode-dedicated-file — config MCP fichier dédié
-- nextjs-15-breaking-changes-cache — fetch no-store par défaut
-- prix-centimes-convention — prix centimes entiers
-- research/digest-2026-W15 — top papers W15 2026
-- tech-debt-registry — registre dette technique
-- vat-guadeloupe-8-5 — TVA Guadeloupe 8.5%
+### literature (5)
+- [[digest-2026-W15]] — Research Digest W15
+- [[digest-ai-W16]] — Digest AI W16
+- [[digest-cloud-W16]] — Digest Cloud W16
+- [[digest-ecommerce-W16]] — Digest ecommerce W16
+- [[digest-iot-W16]] — Digest IoT W16

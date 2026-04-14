@@ -50,4 +50,6 @@ Les graphiques scientifiques embarquant leur construction complète (données→
 - [Security Concerns in Generative AI Coding Assistants: Insights from Online Discussions on GitHub Copilot](http://arxiv.org/abs/2604.08352v1)
 - [What They Saw, Not Just Where They Looked: Semantic Scanpath Similarity via VLMs and NLP metric](http://arxiv.org/abs/2604.08494v1)
 
+## Liens
+
 <!-- generated: 2026-04-14 -->

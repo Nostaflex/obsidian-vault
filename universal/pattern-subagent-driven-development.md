@@ -21,5 +21,7 @@ Pour les implémentations multi-fichiers complexes : 1 subagent par tâche indé
 **Quand l'utiliser** : tout script/feature > 50 lignes touchant plusieurs fichiers.
 
 ## Liens
+- [[A-2604-07988v1-1]] — agents publient actions dans un log partagé avant exécution, pattern complémentaire au reviewer subagent
+- [[A-2604-08123v1-1]] — fragmentation pipeline IA en services autonomes, même philosophie de décomposition que subagent-driven
 
 <!-- generated: 2026-04-11 -->

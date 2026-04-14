@@ -2,23 +2,27 @@
 type: moc
 scope: "Master index — routing table for /load-moc skill"
 notes_count: 0
-last_updated: 2026-04-13
-generated_by: manual (overridden by nightly)
+last_updated: 2026-04-15
+generated_by: nightly
 ---
 
 # MOC Index
 
 | MOC | tags | n | use_when |
 |-----|------|---|----------|
-| [[moc-second-brain]] | second-brain,vault,pipeline | 28 | entry défaut, multi-domain |
-| [[moc-architecture]] | architecture,patterns,pipeline | 13 | "comment / pourquoi ce choix" |
-| [[moc-decision]] | decision,adr | 8 | rappel décision précise |
-| [[moc-discovery]] | discovery,findings,lessons | 8 | "qu'a-t-on appris" |
-| [[moc-anti-bug]] | bug,regression,prevention | 7 | debug, prévention |
-| [[moc-nightly-agent]] | nightly,launchd,cron,corpus | 5 | pipeline nocturne |
-| [[moc-security]] | security,secrets,keychain,audit | 6 | audit, secrets |
-| [[moc-gpparts]] | gpparts | 6 | projet GPParts (hors second-brain) |
-
+| [[moc-anti-bug]] | anti-bug | 7 | bugs récurrents fixes validés |
+| [[moc-architecture]] | architecture | 14 | ADRs patterns structurels système |
+| [[moc-claude-code]] | claude-code | 5 | setup Claude Code skills hooks |
+| [[moc-cloud]] | cloud | 10 | notes cloud infra décentralisation |
+| [[moc-decision]] | decision | 8 | décisions architecturales enregistrées |
+| [[moc-digest]] | digest | 5 | research digests hebdomadaires |
+| [[moc-discovery]] | discovery | 8 | découvertes techniques importantes |
+| [[moc-gpparts]] | gpparts | 8 | projet GP Parts ecommerce Next.js |
+| [[moc-iot]] | iot | 8 | IoT edge agents périphériques |
+| [[moc-mcp]] | mcp | 5 | Model Context Protocol config |
+| [[moc-nightly-agent]] | nightly-agent | 5 | pipeline nightly agent architecture |
+| [[moc-second-brain]] | second-brain | 29 | naviguer architecture pipeline vault |
+| [[moc-security]] | security | 6 | sécurité guardrails vault pipeline |
 Routing rules: voir skill `/load-moc`. Régen par nightly.
 
 #meta #moc

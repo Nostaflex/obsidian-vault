@@ -151,3 +151,93 @@ Aucune contradiction détectée sur les 42 notes actives.
 
 ### Auto-corrections silencieuses 2026-04-13
 0 corrections nécessaires (toutes les notes ont déjà ## Liens).
+
+---
+
+## Lint 2026-04-14
+
+### Auto-corrections silencieuses 2026-04-14
+1 correction : ajout `## Liens` manquant dans `universal/research/digest-ecommerce-W16.md`.
+0 wikilink redirige (aucun lien casse vers un basename existant sous un autre nom).
+
+### Orphelines 2026-04-14
+15 notes orphelines identifiees (aucune referencee dans ## Liens d'autres notes) :
+- universal/research/digest-2026-W15.md
+- universal/research/digest-ai-W16.md
+- universal/research/digest-cloud-W16.md
+- universal/research/digest-ecommerce-W16.md
+- universal/research/digest-iot-W16.md
+- universal/mcp-vscode-dedicated-file.md
+- universal/anti-bug-set-e-jq-missing-file.md
+- universal/anti-bug-zip-executable-bit-lost.md
+- universal/concept-context-preservation-after-mitosis.md
+- projects/gpparts/anti-bug-checkout-race-condition.md
+- projects/second-brain/anti-bug-claude-jsonl-schema.md
+- projects/second-brain/anti-bug-grep-confidentiel-faux-positif.md
+- projects/second-brain/architecture-paper-synthesizer.md
+- projects/second-brain/future-mcp-obsidian-server.md
+- projects/second-brain/meta-purpose-lab-for-enterprise.md
+
+_Toutes creees < 30j -- pas de marquage archive-candidate._
+
+### Wikilinks casses 2026-04-14
+7 liens casses detectes -- tous presents dans `_meta/lint-ignore.txt` (faux positifs documentes) :
+- `[[ancienne-note]]`, `[[note-dependante]]`, `[[note-opposee]]`, `[[wikilinks]]` (exemples template dans decision-knowledge-graph-deferred.md)
+- `[[note]]`, `[[note|alias]]` (exemple dans concept-context-preservation-after-mitosis.md)
+- `[[wiki]]` (exemple dans future-mcp-obsidian-server.md)
+
+Aucune action requise.
+
+### Candidats archivage 2026-04-14
+Vault < 90j -- aucun candidat eligible. `_meta/signals.md` vide (aucun hit/miss enregistre).
+
+### Contradictions potentielles 2026-04-14
+Aucune contradiction detectee sur les 67 notes actives.
+
+### Review queue 2026-04-14
+`_inbox/review/weekly-review-W16.md` cree avec 3 fleeting les plus anciennes (2026-04-12) :
+- anti-bug-mcp-server-scoped-vscode-only
+- anti-bug-set-e-jq-missing-file
+- anti-bug-zip-executable-bit-lost
+
+## Lint 2026-04-15 — Fleeting guard actif (37 ≥ 15)
+
+**Run mode:** lint seul (synthèse suspendue — fleeting_count=37)
+
+### 4a — Auto-corrections
+- Aucune correction appliquée (broken-links.txt vide, toutes notes ont ## Liens)
+
+### 4b — Orphelines
+16 notes sans mention dans ## Liens d'autres notes — aucune > 30j, pas de marquage archive-candidate.
+- universal/anti-bug-set-e-jq-missing-file.md (3j)
+- universal/anti-bug-zip-executable-bit-lost.md (3j)
+- universal/concept-cognitive-mitosis-atomicity.md (3j)
+- universal/concept-context-preservation-after-mitosis.md (3j)
+- projects/second-brain/architecture-paper-synthesizer.md (2j)
+- projects/second-brain/future-mcp-obsidian-server.md (2j)
+- projects/second-brain/meta-purpose-lab-for-enterprise.md (1j)
+- universal/research/digest-ai-W16.md (1j)
+- universal/research/digest-cloud-W16.md (1j)
+- universal/research/digest-ecommerce-W16.md (1j)
+- universal/research/digest-iot-W16.md (1j)
+- projects/gpparts/anti-bug-checkout-race-condition.md (date inconnue)
+- projects/second-brain/anti-bug-claude-jsonl-schema.md (date inconnue)
+- projects/second-brain/anti-bug-grep-confidentiel-faux-positif.md (date inconnue)
+- universal/mcp-vscode-dedicated-file.md (date inconnue)
+- universal/research/digest-2026-W15.md (date inconnue)
+
+### 4c — Wikilinks cassés
+Aucun (broken-links.txt vide).
+
+### 4d — Candidats archivage (0 hit 90j)
+Aucun — vault < 30j, fenêtre 90j non atteinte.
+
+### 4e — Contradictions potentielles
+Aucune identifiée automatiquement. Vérification manuelle recommandée : #decision (8 notes), #architecture (13 notes).
+
+### 4f — Review queue
+weekly-review-W16.md déjà présent avec les 3 notes les plus anciennes :
+- [[anti-bug-mcp-server-scoped-vscode-only]] — créée 2026-04-12
+- [[anti-bug-set-e-jq-missing-file]] — créée 2026-04-12
+- [[anti-bug-zip-executable-bit-lost]] — créée 2026-04-12
+

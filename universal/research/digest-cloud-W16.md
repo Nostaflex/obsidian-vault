@@ -50,4 +50,15 @@ Wattlytics cristallise une tendance durable : TCO et performance ne se pensent p
 - [Taming GPU Underutilization via Static Partitioning and Fine-grained CPU Offloading](http://arxiv.org/abs/2604.08451v1)
 - [Wattlytics: A Web Platform for Co-Optimizing Performance, Energy, and TCO in HPC Clusters](http://arxiv.org/abs/2604.08182v1)
 
+## Liens
+- [[A-2604-07760v1-1]] — concept extraction : satellite compute architecture, power-mass ratio (Reduced-Mass Orbital AI)
+- [[A-2604-07767v1-1]] — concept extraction : cloud strategic control + edge tactical autonomy (Administrative Decentralization)
+- [[A-2604-07767v1-2]] — concept extraction : edge UI perception for adaptive execution (Administrative Decentralization)
+- [[A-2604-07988v1-1]] — concept extraction : agents publish actions in shared log before execution (LogAct)
+- [[A-2604-07988v1-2]] — concept extraction : agent self-diagnosis via LLM introspection of execution log (LogAct)
+- [[A-2604-08123v1-1]] — concept extraction : AI pipeline fragmentation into autonomous services (LegoDiffusion)
+- [[A-2604-08123v1-2]] — concept extraction : inter-workflow model pooling reduces memory (LegoDiffusion)
+- [[A-2604-08182v1-1]] — concept extraction : GPU power varies by discrete DVFS steps (Wattlytics)
+- [[A-2604-08182v1-2]] — concept extraction : TCO over 5 years depends on electricity as much as hardware (Wattlytics)
+
 <!-- generated: 2026-04-14 -->

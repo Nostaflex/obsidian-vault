@@ -61,4 +61,13 @@ La semaine souligne que **décentralisation n'est plus choix architectural, mais
 - [Weighted Sum Rate Maximization for ITS-Aided Arrays in Multi-User MIMO](http://arxiv.org/abs/2604.08188v1)
 - [Wideband Compressed-Domain Cramér--Rao Bounds for Near-Field XL-MIMO: Data and Geometric Diversity Decomposition](http://arxiv.org/abs/2604.08531v1)
 
+## Liens
+- [[A-2604-08188v1-1]] — concept extraction : transmissive intelligent surfaces amplify multi-user capacity (ITS-Aided MIMO)
+- [[A-2604-08188v1-2]] — concept extraction : energy constraint type restructures optimal architecture (ITS-Aided MIMO)
+- [[A-2604-08197v1-1]] — concept extraction : discrete diffusion generates beam candidates from probing history (Beam Management)
+- [[A-2604-08197v1-2]] — concept extraction : limited probing = partially observable sequential decision (Beam Management)
+- [[A-2604-08199v1-1]] — concept extraction : world models capture traffic-parameter interactions (Mobile Traffic)
+- [[A-2604-08199v1-2]] — concept extraction : multimodal image-sequence fusion for spatial network prediction (Mobile Traffic)
+- [[concept-physics-constraints-eliminate-nocturnal-solar-artifacts]] — physics constraints as domain-knowledge injection pattern, applicable aux modèles IoT
+
 <!-- generated: 2026-04-14 -->
