@@ -315,21 +315,55 @@ Lun 2h17+ : nightly LLM (cap 15/run FIFO)        → vault notes
 
 Premier cycle complet : samedi 18 avril 2026.
 
-### TD-2026-022 — notebooklm_weekly.py orphelin (Track B dormant)
+### TD-2026-022 — notebooklm_weekly.py orphelin (Track B dormant) ✅
 **Sévérité** : 🟡 MOYENNE (681 LOC + 26 tests + wrapper shell, jamais scheduled)
 **Découvert** : 2026-04-14 (audit pipeline scheduling)
+**Statut** : `resolved` (2026-04-14 14h45)
+**Détail** : Track B NotebookLM scheduled + validé end-to-end.
+
+**Actions réalisées** (option a — activation) :
+1. ✅ Google auth via `setup_auth` (Chrome interactif, 7 min)
+2. ✅ 4 notebooks créés manuellement sur notebooklm.google (ai/iot/cloud/ecommerce)
+3. ✅ IDs populated dans `_meta/nlm-notebooks.json`
+4. ✅ 4 notebooks registered dans MCP library (`add_notebook`)
+5. ✅ Plist `_meta/launchd/com.second-brain.nlm-weekly.plist` (Dim 22h, deadline 23h30)
+6. ✅ **Bug shlex fix** découvert au 1er run : `subprocess.Popen([self.cmd])` ne splittait pas `"npx notebooklm-mcp@latest"` → patch avec `shlex.split()` + 2 tests TDD régression
+7. ✅ Plist installé (`launchctl load`) + run réel validé : 1 paper pushé → notebook AI, summary écrit, 0 failures
+
+**Bugs connexes trackés séparément** :
+- **TD-2026-024** : `notebook_create` MCP tool missing (latent 2-3 mois, rotation path)
+- **TD-2026-025** : paper_id missing from concept frontmatter → 30/30 Tier S skipped au grounding
+
+Track B est maintenant active dans le pipeline :
+```
+Sat 08:00 : corpus_collector
+Sat 09:00 : weekly-extractor
+Sun 10:00 : paper-synthesizer
+Sun 22:00 : notebooklm-weekly    ← NEW
+Mon 02:17+: nightly LLM
+```
+
+### TD-2026-024 — notebooklm_weekly.py rotation path expects missing MCP tool
+**Sévérité** : 🟢 BASSE (bug latent 2-3 mois, workaround en place)
+**Découvert** : 2026-04-14 (audit TD-022 activation)
 **Statut** : `open`
-**Détail** : `notebooklm_weekly.py` (681 LOC, 45% test coverage) + `notebooklm-weekly.sh` (wrapper avec deadline 23:30, caffeinate, status sentinel) sont conçus pour Track B (NotebookLM grounded synthesis). Le wrapper existe mais aucun plist ne l'invoque. Track B reste donc inactif (`enrichment_status.track_b_active: false` dans last-nightly.json).
+**Détail** : `NotebookManager.rotate()` appelle `client.call_tool("notebook_create", ...)` — outil que le MCP server v1.0.0 n'expose pas. Fonctionne tant qu'aucun notebook n'atteint `ROTATION_THRESHOLD` (50 sources). Avec ~1-5 papers/semaine/domaine, ça arrivera dans ~10-50 semaines.
 
-Pré-requis vérifiés : `nlm-notebooks.json`, `nlm-status.json`, `_inbox/overflow/`, `_inbox/quarantine/` existent (bootstrap commit `ca70695` du Sprint 2). Variable `NLM_MCP_CMD` requise selon docstring.
+**Action** : quand approche 50 sources, soit créer manuellement un 5ème notebook et patcher l'ID, soit contribuer un PR au MCP notebooklm-mcp pour exposer `notebook_create`.
 
-**Action proposée** :
-1. Vérifier auth NotebookLM (`auth.json`) configuré
-2. Vérifier MCP server NLM disponible (`mcp__notebooklm__*` tools listés mais peut-être inactifs)
-3. Décider : activer Track B (créer plist dimanche 22h, deadline 23:30) ou marquer feature comme "future, pas activée pour l'instant" → selon que le user veut Track B grounded ou pas
-4. Si activé : créer `com.second-brain.nlm-weekly.plist`
+### TD-2026-025 — Concepts frontmatter manque paper_id explicite → NLM grounding skip
+**Sévérité** : 🟠 HAUTE (bloque grounding concept→paper, 30/30 Tier S skipped au 1er run)
+**Découvert** : 2026-04-14 (premier run réel Track B)
+**Statut** : `open`
+**Détail** : `paper_synthesizer.py` écrit les concepts avec frontmatter incluant `source_chain` (contient URL arxiv) mais **pas** de champ `paper_id` direct. `notebooklm_weekly.ground_concept()` cherche `paper_id:` dans frontmatter → skip avec `SKIP (no paper_id)` pour tous les concepts.
 
-Lié : `_meta/notebooklm-context-{ai,iot,cloud,ecommerce,global}.md` existent et sont updated par nightly. Mais sans Track B exécuté, ces contextes ne sont jamais lus par NLM.
+**Impact observé** : premier run Track B 2026-04-14 — `Concepts grounded: 0` malgré 30 Tier S disponibles.
+
+**2 approches possibles** :
+1. **Patch paper_synthesizer** : ajouter `paper_id: {arxiv_id}` au frontmatter quand il génère les concepts (changement upstream, propre)
+2. **Patch notebooklm_weekly** : si `paper_id` absent, extraire depuis `source_chain` (ex: regex sur `origin: http://arxiv.org/abs/XXX` → `arxiv:XXX`)
+
+Option 1 est plus propre (donnée à la source), option 2 est plus résiliente (fallback si source_chain format change). Faire les 2 : option 2 d'abord (fix backward-compat pour les 85 concepts existants), puis option 1 pour les futurs.
 
 ### TD-2026-023 — corpus-rebuild.sh dead code (0 obs indexed)
 **Sévérité** : 🟢 BASSE (cosmétique, ne casse rien mais pollue)

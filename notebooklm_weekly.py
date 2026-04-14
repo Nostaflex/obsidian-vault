@@ -20,6 +20,7 @@ import json
 import os
 import queue
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -103,9 +104,12 @@ class NLMClient:
         self._stop()
 
     def _start(self) -> None:
+        # Split on whitespace so NLM_MCP_CMD can be a full command line like
+        # "npx notebooklm-mcp@latest" — shlex handles quoting correctly too.
+        cmd_argv = shlex.split(self.cmd)
         try:
             self._proc = subprocess.Popen(
-                [self.cmd],
+                cmd_argv,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -114,8 +118,8 @@ class NLMClient:
             )
         except FileNotFoundError:
             raise NLMClientError(
-                f"MCP command '{self.cmd}' not found. "
-                "Install your fork: npm install -g git+https://github.com/<you>/notebooklm-mcp#<sha>"
+                f"MCP command '{self.cmd}' not found (argv={cmd_argv}). "
+                "Install: npm install -g notebooklm-mcp@latest  OR  set NLM_MCP_CMD='npx notebooklm-mcp@latest' with npx in PATH."
             )
         self._reader_thread = threading.Thread(target=self._read_loop, daemon=True)
         self._reader_thread.start()
