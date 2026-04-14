@@ -357,19 +357,28 @@ Mon 02:17+: nightly LLM
 
 **Action** : quand approche 50 sources, soit créer manuellement un 5ème notebook et patcher l'ID, soit contribuer un PR au MCP notebooklm-mcp pour exposer `notebook_create`.
 
-### TD-2026-025 — Concepts frontmatter manque paper_id explicite → NLM grounding skip
-**Sévérité** : 🟠 HAUTE (bloque grounding concept→paper, 30/30 Tier S skipped au 1er run)
+### TD-2026-025 — Concepts frontmatter manque paper_id explicite → NLM grounding skip ✅
+**Sévérité** : 🟠 HAUTE → résolue
 **Découvert** : 2026-04-14 (premier run réel Track B)
-**Statut** : `open`
-**Détail** : `paper_synthesizer.py` écrit les concepts avec frontmatter incluant `source_chain` (contient URL arxiv) mais **pas** de champ `paper_id` direct. `notebooklm_weekly.ground_concept()` cherche `paper_id:` dans frontmatter → skip avec `SKIP (no paper_id)` pour tous les concepts.
+**Statut** : `resolved` (2026-04-14 15h10)
+**Détail** : `paper_synthesizer.py` n'écrivait pas `paper_id:` dans frontmatter concept. `notebooklm_weekly.load_tier_s_concepts()` cherchait `paper_id:` directement → skip 30/30 Tier S au premier run.
 
-**Impact observé** : premier run Track B 2026-04-14 — `Concepts grounded: 0` malgré 30 Tier S disponibles.
+**Actions réalisées (les 2 approches combinées)** :
+1. ✅ **Upstream fix** (paper_synthesizer.write_concept_note) : ajoute `paper_id: "{paper_id}"` au frontmatter YAML
+   - 1 test TDD régression : `test_frontmatter_includes_paper_id_for_nlm_grounding`
+   - Futurs concepts = paper_id direct, 100% groundables
+2. ✅ **Downstream fallback** (notebooklm_weekly) : si `paper_id` absent, extrait depuis `source_chain` via regex `arxiv.org/abs/XXX`
+   - Helper `_extract_paper_id_from_source_chain()` avec regex `_ARXIV_URL_RE`
+   - 4 tests TDD : explicit wins, fallback arxiv URL, empty source_chain, tier filter preserved
+   - Legacy concepts (85 existants du batch 2026-04-14) maintenant backward-compat
 
-**2 approches possibles** :
-1. **Patch paper_synthesizer** : ajouter `paper_id: {arxiv_id}` au frontmatter quand il génère les concepts (changement upstream, propre)
-2. **Patch notebooklm_weekly** : si `paper_id` absent, extraire depuis `source_chain` (ex: regex sur `origin: http://arxiv.org/abs/XXX` → `arxiv:XXX`)
+**Validation empirique** : avec les 85 concepts du batch de ce matin :
+- Avant fix : 0/30 Tier S groundables (0%)
+- Après fix : **25/30 Tier S groundables (83%)** — les 5 manquants ont source_chain Semantic Scholar (pas arxiv)
 
-Option 1 est plus propre (donnée à la source), option 2 est plus résiliente (fallback si source_chain format change). Faire les 2 : option 2 d'abord (fix backward-compat pour les 85 concepts existants), puis option 1 pour les futurs.
+**Verdict** : Track B dimanche soir prochaine run va enfin grounder quasi toute la batch (vs 0 actuellement). Le 17% non-couvert (Semantic Scholar URLs) pourrait être adressé plus tard avec une seconde regex.
+
+**Full suite** : 157 tests (+5 depuis TD-020).
 
 ### TD-2026-023 — corpus-rebuild.sh dead code (0 obs indexed)
 **Sévérité** : 🟢 BASSE (cosmétique, ne casse rien mais pollue)

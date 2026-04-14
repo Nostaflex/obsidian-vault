@@ -71,6 +71,20 @@ class TestWriteConceptNote:
         assert p1.name.endswith("-1.md")
         assert p2.name.endswith("-2.md")
 
+    def test_frontmatter_includes_paper_id_for_nlm_grounding(self, tmp_path, monkeypatch):
+        # Régression TD-2026-025 : notebooklm_weekly.ground_concept() cherche
+        # `paper_id:` dans frontmatter. Sans lui, 30/30 Tier S skipped au grounding
+        # (premier run Track B 2026-04-14).
+        import paper_synthesizer as ps
+        monkeypatch.setattr(ps, "CONCEPTS_DIR", tmp_path / "concepts")
+        concept = self._concept(paper_id="arxiv:2604.08545")
+        path = write_concept_note(concept, "ai", 16, "2026-04-14")
+        content = path.read_text()
+        assert "paper_id: " in content
+        # The value should be the original (unsanitized) paper_id so downstream
+        # tooling can recognize arxiv prefix
+        assert "arxiv:2604.08545" in content
+
 
 class TestParseFrontmatter:
     def test_returns_empty_when_no_frontmatter(self):

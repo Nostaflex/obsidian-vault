@@ -430,10 +430,35 @@ def write_grounded_note(
     return path
 
 
+_ARXIV_URL_RE = re.compile(r"arxiv\.org/abs/([\w.-]+?)(?:v\d+)?(?:\s|$|[^\w.-])")
+
+
+def _extract_paper_id_from_source_chain(source_chain) -> str:
+    """Fallback: derive paper_id from source_chain 'origin: <url>' entries.
+
+    Backward-compat for legacy concepts (paper_synthesizer pre-2026-04-14 fix)
+    that lack an explicit `paper_id:` field in frontmatter. Recognizes arxiv
+    URLs and returns `arxiv:XXXX.YYYYY` format matching the downstream
+    convention. Returns empty string if no URL found.
+    """
+    if not source_chain or not isinstance(source_chain, list):
+        return ""
+    for entry in source_chain:
+        if not isinstance(entry, str):
+            continue
+        m = _ARXIV_URL_RE.search(entry)
+        if m:
+            return f"arxiv:{m.group(1)}"
+    return ""
+
+
 def load_tier_s_concepts(concepts_dir: Path) -> list:
     """
     Load all A-*.md files with tier: S from frontmatter.
     Returns list of dicts: {path, paper_id, tier, source_chain, title}
+
+    If paper_id is missing from frontmatter (legacy concepts), falls back
+    to extracting it from source_chain URL. Resolves TD-2026-025.
     """
     concepts = []
     for f in sorted(concepts_dir.glob("A-*.md")):
@@ -441,11 +466,13 @@ def load_tier_s_concepts(concepts_dir: Path) -> list:
         fm = parse_frontmatter(text)
         if not fm or fm.get("tier") != "S":
             continue
+        source_chain = fm.get("source_chain", [])
+        paper_id = fm.get("paper_id", "") or _extract_paper_id_from_source_chain(source_chain)
         concepts.append({
             "path": f,
-            "paper_id": fm.get("paper_id", ""),
+            "paper_id": paper_id,
             "tier": "S",
-            "source_chain": fm.get("source_chain", []),
+            "source_chain": source_chain,
             "title": extract_h1_title(text),
         })
     return concepts

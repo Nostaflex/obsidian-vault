@@ -9,6 +9,75 @@ import pytest
 import yaml
 
 
+# ── load_tier_s_concepts paper_id fallback (regression TD-2026-025) ───────────
+
+class TestLoadTierSConceptsFallback:
+    """When paper_id is absent from concept frontmatter, extract it from
+    source_chain 'origin: http://arxiv.org/abs/XXX' URL. Guarantees
+    ground_concept() doesn't skip legacy concepts produced before the
+    upstream paper_id fix (2026-04-14 batch, 85 concepts)."""
+
+    def _write_concept(self, path: Path, tier: str, paper_id: str = None,
+                       source_chain: list = None):
+        fm_lines = ["---", "type: concept", f"tier: {tier}"]
+        if paper_id is not None:
+            fm_lines.append(f'paper_id: "{paper_id}"')
+        if source_chain:
+            fm_lines.append("source_chain:")
+            for entry in source_chain:
+                fm_lines.append(f'  - "{entry}"')
+        fm_lines.append("---")
+        fm_lines.append("# Test concept title")
+        path.write_text("\n".join(fm_lines), encoding="utf-8")
+
+    def test_explicit_paper_id_wins(self, tmp_path):
+        from notebooklm_weekly import load_tier_s_concepts
+        self._write_concept(
+            tmp_path / "A-test-1.md",
+            tier="S",
+            paper_id="arxiv:EXPLICIT",
+            source_chain=["origin: http://arxiv.org/abs/OTHER", "via: x"],
+        )
+        result = load_tier_s_concepts(tmp_path)
+        assert len(result) == 1
+        assert result[0]["paper_id"] == "arxiv:EXPLICIT"
+
+    def test_fallback_extracts_arxiv_id_from_source_chain(self, tmp_path):
+        from notebooklm_weekly import load_tier_s_concepts
+        self._write_concept(
+            tmp_path / "A-test-1.md",
+            tier="S",
+            paper_id=None,  # missing
+            source_chain=[
+                "origin: http://arxiv.org/abs/2604.08545v1",
+                "via: paper_synthesizer.py W16",
+            ],
+        )
+        result = load_tier_s_concepts(tmp_path)
+        assert len(result) == 1
+        pid = result[0]["paper_id"]
+        assert "2604.08545" in pid
+
+    def test_fallback_returns_empty_when_no_url_in_source_chain(self, tmp_path):
+        from notebooklm_weekly import load_tier_s_concepts
+        self._write_concept(
+            tmp_path / "A-test-1.md",
+            tier="S",
+            paper_id=None,
+            source_chain=["origin: some opaque thing", "via: x"],
+        )
+        result = load_tier_s_concepts(tmp_path)
+        assert result[0]["paper_id"] == ""
+
+    def test_tier_filter_still_enforced(self, tmp_path):
+        from notebooklm_weekly import load_tier_s_concepts
+        self._write_concept(tmp_path / "A-a-1.md", tier="A", paper_id="arxiv:X")
+        self._write_concept(tmp_path / "A-s-1.md", tier="S", paper_id="arxiv:Y")
+        result = load_tier_s_concepts(tmp_path)
+        assert len(result) == 1
+        assert result[0]["paper_id"] == "arxiv:Y"
+
+
 # ── NLMClient command splitting (regression 2026-04-14) ───────────────────────
 
 class TestNLMClientCommandSplitting:
