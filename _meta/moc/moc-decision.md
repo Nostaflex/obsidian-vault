@@ -2,13 +2,14 @@
 type: moc
 tag: decision
 tags: [decision, adr]
-notes_count: 7
+notes_count: 8
 last_updated: 2026-04-13
 scope: "auto-generated MOC for tag #decision"
 ---
 # MOC — #decision
-Generated: 2026-04-13 | 7 notes
+Generated: 2026-04-13 | 8 notes
 
+- [[architecture-token-efficient-skills]] — ADR skills token-efficient pour Claude Code, compression budget
 - [[decision-architecture-hybride-second-brain]] — Hybride Algo+LLM injection directe vault trois guardrails prompt
 - [[decision-bash-vs-python-boundary]] — Mix bash 250 LOC Python 1860 LOC conservé, integrity seul à migrer
 - [[decision-knowledge-graph-deferred]] — Knowledge graph différé, wikilinks suffisent avant 100 notes actives

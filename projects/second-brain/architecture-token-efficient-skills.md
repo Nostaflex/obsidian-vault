@@ -177,7 +177,7 @@ Un skill "check everything" qui lit 20 fichiers échoue l'audit token.
 
 ## Liens
 - [[audit-setup-claude-code-2026-04-13]] — audit source qui a identifié les 3 skills
-- [[decision-bash-vs-python-boundary.md]] — règles bash/python du projet
+- [[decision-bash-vs-python-boundary]] — règles bash/python du projet
 - [[tech-debt-registry]] — registry des dettes techniques
 
 ## Tags

@@ -1,5 +1,7 @@
 # LOG — Knowledge Base
 
+## [2026-04-13] lint | orphelines: 0 | contradictions: 0 | candidats-archivage: 0 | auto-corrections: 2
+
 _Append-only — mis à jour par l'agent nocturne après chaque ingestion._
 _Format : `## [YYYY-MM-DD] type | source → N notes`_
 _Ne jamais éditer ou supprimer d'entrées existantes._
@@ -23,3 +25,5 @@ _Ne jamais éditer ou supprimer d'entrées existantes._
 ## [2026-04-12] ingest | raw/docs/art-mytose-preserver-contexte-atomique.md → 1 note
 ## [2026-04-12] lint | orphelines: 0 | contradictions: 0 | candidats-archivage: 0 | auto-corrections: 4
 ## [2026-04-12] rebuild | INDEX.md → 38 notes | MOC générés: 7 (#second-brain #architecture #discovery #anti-bug #gpparts #decision #nightly-agent)
+## [2026-04-13] lint | orphelines: 10 | contradictions: 0 | candidats-archivage: 0 | auto-corrections: 0
+## [2026-04-13] rebuild | INDEX.md → 42 notes | MOC générés: 8 (#second-brain #architecture #discovery #decision #anti-bug #security #gpparts #nightly-agent)
