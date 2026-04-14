@@ -4,7 +4,28 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from paper_synthesizer import parse_concepts_from_text, sanitize_paper_id
+from paper_synthesizer import (
+    _batch_custom_id,
+    parse_concepts_from_text,
+    sanitize_paper_id,
+)
+
+
+class TestBatchCustomId:
+    """Anthropic Batch API limits custom_id to 64 chars. Regression test."""
+
+    def test_long_path_produces_id_under_64_chars(self):
+        long_path = "_inbox/raw/papers/ai/2604.08545v1_act_wisely_cultivating_meta_cognitive_tool_use_in_agentic_mode_for_papers_too_long.md"
+        assert len(long_path) > 64
+        result = _batch_custom_id(long_path)
+        assert len(result) <= 64
+
+    def test_deterministic_same_path_same_id(self):
+        path = "_inbox/raw/papers/ai/2604.08545v1_foo.md"
+        assert _batch_custom_id(path) == _batch_custom_id(path)
+
+    def test_different_paths_different_ids(self):
+        assert _batch_custom_id("a/b.md") != _batch_custom_id("a/c.md")
 
 
 class TestSanitizePaperId:

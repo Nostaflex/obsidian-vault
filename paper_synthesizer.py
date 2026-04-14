@@ -378,6 +378,19 @@ def clear_batch_job(domain: str) -> None:
 
 # ── Anthropic Batch API ───────────────────────────────────────────────────────
 
+def _batch_custom_id(path: str) -> str:
+    """Generate a deterministic batch custom_id from a paper path.
+
+    Anthropic Batch API limits custom_id to 64 chars, and paper paths like
+    `_inbox/raw/papers/ai/<arxiv_id>_<long_title_slug>.md` routinely exceed
+    100 chars. md5 hex (32 chars) is well under the limit, deterministic,
+    and collision-safe for batches of thousands of papers.
+
+    Regression fix for TD-2026-019 batch submission failure.
+    """
+    return hashlib.md5(path.encode("utf-8")).hexdigest()
+
+
 def submit_batch(papers: list, client: anthropic.Anthropic) -> str:
     """Soumet tous les papers à l'Anthropic Batch API. Retourne le batch_id."""
     requests = []
@@ -391,7 +404,7 @@ def submit_batch(papers: list, client: anthropic.Anthropic) -> str:
             content=paper["content"][:3000],
         )
         requests.append({
-            "custom_id": str(paper["path"]),
+            "custom_id": _batch_custom_id(str(paper["path"])),
             "params": {
                 "model": MODEL,
                 "max_tokens": MAX_TOKENS_CONCEPTS,
@@ -489,8 +502,9 @@ def process_domain(
     # ── Attendre la fin du batch ─────────────────────────────────────────────
     wait_for_batch(batch_id, client)
 
-    # ── Construire index papers par path pour lookup dans les résultats ──────
-    papers_by_path = {str(p["path"]): p for p in papers}
+    # ── Construire index papers par custom_id pour lookup dans les résultats ──
+    # Use same hash function as submit_batch so reverse lookup succeeds.
+    papers_by_path = {_batch_custom_id(str(p["path"])): p for p in papers}
 
     # ── Traiter les résultats ────────────────────────────────────────────────
     all_concepts: list[dict] = []
