@@ -234,6 +234,34 @@ Philosophies divergentes (orchestrator-subagent vs plan TDD).
 **Détail** : `knowledge-agent`, `timeline-report`, `version-bump`, `smart-explore` jamais appelés dans logs. Conçus pour dev plugins, pas Second Brain.
 **Action** : Aucune — cohabitent sans nuire.
 
+### TD-2026-020 — Test coverage hétérogène sur modules Python pipeline
+**Sévérité** : 🟡 MOYENNE (les 2 modules critiques `paper_synthesizer` et `corpus_collector` sont < 25%)
+**Découvert** : 2026-04-14 (quick wins audit post-Sprint 2)
+**Statut** : `open`
+**Détail** :
+
+| Module | Src lines | Test lines | Ratio line | Coverage réelle |
+|--------|-----------|------------|------------|-----------------|
+| `moc_freshness.py` | 223 | 224 | 100% | Excellente (TDD strict) |
+| `integrity_check.py` | 524 | 433 | 83% | Solide |
+| `notebooklm_weekly.py` | 681 | 311 | 46% | Moyenne |
+| `corpus_collector.py` | 519 | 106 | 20% | 🚨 Faible |
+| `paper_synthesizer.py` | 678 | 95 | 14% | 🚨 Critique |
+
+Le module le plus exposé (paper_synthesizer avec Anthropic Batch API externe) a la couverture la plus basse. Le bug 64-char custom_id découvert empiriquement 2026-04-14 (TD-2026-019 fix) aurait été attrapé par un test d'intégration minimal.
+
+Cible proposée :
+- Modules critiques (paper_synth, corpus_collector) : ≥ 40% branch coverage avec `pytest-cov`
+- Modules secondaires : ≥ 30%
+- Modules core (integrity, moc_freshness) : garder > 80%
+
+**Action** :
+1. `pip install pytest-cov` (mesure réelle, pas ratio ligne)
+2. Ajouter `pytest --cov=. --cov-fail-under=40 --cov-report=term-missing` à CI quand on aura CI
+3. Prioriser tests sur `paper_synthesizer.submit_batch()` (mock Anthropic client), `process_batch_results()`, `parse_frontmatter_preamble()`
+
+Coût marginal faible (couches à tester sont pures Python, mockable sans infra), grosse valeur préventive.
+
 ### TD-2026-019 — paper_synthesizer.py orphelin (jamais branché en prod)
 **Sévérité** : 🟠 HAUTE (664 lignes Python + Anthropic Batch API + 47 papers en backlog ne sont jamais traités)
 **Découvert** : 2026-04-13 (audit Opus, test empirique nightly run)
