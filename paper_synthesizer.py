@@ -268,6 +268,7 @@ def write_concept_note(concept: dict, domain: str, week_num: int, today: str,
 type: concept
 maturity: fleeting
 tier: {tier}
+paper_id: "{paper_id}"
 created: {today}
 source_chain:
   - "origin: {source_url}"
