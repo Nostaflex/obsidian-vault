@@ -373,3 +373,96 @@ collected: "{collected}"
 
 <!-- source-url: {url} -->
 """
+
+
+# ── Déduplication ─────────────────────────────────────────────────────────────
+
+def load_seen_ids(seen_ids_file: Path = None) -> set:
+    """Charge les paper_ids déjà vus depuis le fichier partagé avec corpus_collector.py."""
+    f = seen_ids_file or SEEN_IDS_FILE
+    if not f.exists():
+        return set()
+    lines = f.read_text(encoding="utf-8").splitlines()
+    return {line.strip() for line in lines if line.strip()}
+
+
+def save_seen_ids(seen: set, seen_ids_file: Path = None) -> None:
+    """Persiste les paper_ids vus. Écriture atomique via .tmp + os.replace()."""
+    f = seen_ids_file or SEEN_IDS_FILE
+    f.parent.mkdir(parents=True, exist_ok=True)
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text("\n".join(sorted(seen)) + "\n", encoding="utf-8")
+    os.replace(tmp, f)
+
+
+# ── Sauvegarde ────────────────────────────────────────────────────────────────
+
+def save_articles(articles: list, domain: str, seen_ids: set,
+                  min_score: float = DEFAULT_MIN_SCORE,
+                  raw_dir: Path = None, dry_run: bool = False) -> dict:
+    """
+    Score, filtre et sauvegarde les articles praiciens.
+
+    Returns stats: {saved, duplicates, tier_c_filtered, would_save, tier_counts}.
+    seen_ids is mutated in-place — caller must persist with save_seen_ids().
+    """
+    out_dir = (raw_dir or RAW_DIR) / domain
+    if not dry_run:
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+    stats = {
+        "saved": 0,
+        "duplicates": 0,
+        "tier_c_filtered": 0,
+        "would_save": 0,
+        "tier_counts": {"S": 0, "A": 0, "B": 0, "C": 0},
+    }
+
+    for article in articles:
+        url = article.get("url", "")
+        if not url or not article.get("title"):
+            continue
+
+        paper_id = prac_paper_id(url)
+        if paper_id in seen_ids:
+            stats["duplicates"] += 1
+            continue
+
+        score = score_article(
+            title=article.get("title", ""),
+            summary=article.get("summary", ""),
+            domain=domain,
+            published_date=article.get("published_date", datetime.utcnow()),
+        )
+        tier = score_to_tier(score)
+        stats["tier_counts"][tier] += 1
+
+        if score < min_score:
+            stats["tier_c_filtered"] += 1
+            continue
+
+        article = dict(article)  # avoid mutating caller's dict
+        article["paper_id"] = paper_id
+        article["relevance_score"] = score
+        article["tier"] = tier
+        article["keywords"] = [
+            kw for kw in DOMAIN_FALLBACK_KEYWORDS.get(domain, [])
+            if kw in (article.get("title", "") + " " + article.get("summary", "")).lower()
+        ][:5]
+
+        if dry_run:
+            print(f"[DRY-RUN] {tier} {score:.2f} — {article['title'][:80]}")
+            stats["would_save"] += 1
+            seen_ids.add(paper_id)
+            continue
+
+        slug = re.sub(r"[^\w]", "_", article["title"][:50].lower()).strip("_")
+        date_str = article.get("published_date", datetime.utcnow()).strftime("%Y-%m-%d")
+        fname = out_dir / f"{date_str}_{slug}.md"
+
+        if not fname.exists():
+            fname.write_text(format_as_markdown(article, domain), encoding="utf-8")
+            stats["saved"] += 1
+            seen_ids.add(paper_id)
+
+    return stats

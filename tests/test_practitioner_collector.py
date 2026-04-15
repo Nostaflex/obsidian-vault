@@ -266,3 +266,65 @@ class TestFormatAsMarkdown:
                 summary_content = line.replace("**Résumé :** ", "")
                 assert len(summary_content) <= 800
                 break
+
+
+class TestSaveArticles:
+    def _make_article(self, url="https://cloud.google.com/blog/test"):
+        return {
+            "title": "Cloud Run Best Practices",
+            "url": url,
+            "summary": "Best practices for Cloud Run on GCP.",
+            "published_date": datetime(2026, 4, 14, 10, 0, 0),
+        }
+
+    def test_save_article_creates_file(self, tmp_path):
+        seen: set = set()
+        articles = [self._make_article()]
+        stats = pc.save_articles(articles, "gcp", seen, min_score=0.0, raw_dir=tmp_path)
+        assert stats["saved"] == 1
+        files = list((tmp_path / "gcp").glob("*.md"))
+        assert len(files) == 1
+
+    def test_duplicate_article_not_saved_twice(self, tmp_path):
+        seen: set = set()
+        articles = [self._make_article()]
+        pc.save_articles(articles, "gcp", seen, min_score=0.0, raw_dir=tmp_path)
+        stats2 = pc.save_articles(articles, "gcp", seen, min_score=0.0, raw_dir=tmp_path)
+        assert stats2["saved"] == 0
+        assert stats2["duplicates"] == 1
+
+    def test_tier_c_article_not_saved(self, tmp_path):
+        seen: set = set()
+        articles = [{
+            "title": "Recipe: Sourdough Bread",
+            "url": "https://example.com/sourdough",
+            "summary": "How to bake sourdough.",
+            "published_date": datetime(2026, 1, 1),
+        }]
+        stats = pc.save_articles(articles, "gcp", seen, min_score=0.3, raw_dir=tmp_path)
+        assert stats["saved"] == 0
+        assert stats["tier_c_filtered"] == 1
+
+    def test_dry_run_does_not_write_files(self, tmp_path):
+        seen: set = set()
+        articles = [self._make_article()]
+        stats = pc.save_articles(articles, "gcp", seen, min_score=0.0,
+                                 raw_dir=tmp_path, dry_run=True)
+        files = list(tmp_path.glob("**/*.md"))
+        assert len(files) == 0
+        assert stats["saved"] == 0
+        assert stats["would_save"] == 1
+
+    def test_load_save_seen_ids_roundtrip(self, tmp_path):
+        seen_file = tmp_path / "seen.txt"
+        original = {"prac-abc12345", "arxiv:2401.12345"}
+        pc.save_seen_ids(original, seen_ids_file=seen_file)
+        loaded = pc.load_seen_ids(seen_ids_file=seen_file)
+        assert loaded == original
+
+    def test_save_articles_adds_to_seen_ids(self, tmp_path):
+        seen: set = set()
+        articles = [self._make_article()]
+        pc.save_articles(articles, "gcp", seen, min_score=0.0, raw_dir=tmp_path)
+        expected_id = pc.prac_paper_id("https://cloud.google.com/blog/test")
+        assert expected_id in seen
