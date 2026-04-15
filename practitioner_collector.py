@@ -428,11 +428,14 @@ def save_articles(articles: list, domain: str, seen_ids: set,
             stats["duplicates"] += 1
             continue
 
+        pub_date = article.get("published_date", datetime.utcnow())
+        if isinstance(pub_date, str):
+            pub_date = parse_date(pub_date)
         score = score_article(
             title=article.get("title", ""),
             summary=article.get("summary", ""),
             domain=domain,
-            published_date=article.get("published_date", datetime.utcnow()),
+            published_date=pub_date,
         )
         tier = score_to_tier(score)
         stats["tier_counts"][tier] += 1
@@ -457,12 +460,12 @@ def save_articles(articles: list, domain: str, seen_ids: set,
             continue
 
         slug = re.sub(r"[^\w]", "_", article["title"][:50].lower()).strip("_")
-        date_str = article.get("published_date", datetime.utcnow()).strftime("%Y-%m-%d")
+        date_str = pub_date.strftime("%Y-%m-%d")
         fname = out_dir / f"{date_str}_{slug}.md"
 
         if not fname.exists():
             fname.write_text(format_as_markdown(article, domain), encoding="utf-8")
             stats["saved"] += 1
-            seen_ids.add(paper_id)
+        seen_ids.add(paper_id)  # always heal seen_ids gap even if file already on disk
 
     return stats

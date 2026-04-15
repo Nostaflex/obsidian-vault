@@ -328,3 +328,20 @@ class TestSaveArticles:
         pc.save_articles(articles, "gcp", seen, min_score=0.0, raw_dir=tmp_path)
         expected_id = pc.prac_paper_id("https://cloud.google.com/blog/test")
         assert expected_id in seen
+
+    def test_file_exists_heals_seen_ids(self, tmp_path):
+        """If file exists on disk but not in seen_ids, seen_ids should be healed."""
+        seen: set = set()
+        articles = [self._make_article()]
+        # First save — creates file
+        pc.save_articles(articles, "gcp", seen, min_score=0.0, raw_dir=tmp_path)
+        assert pc.prac_paper_id("https://cloud.google.com/blog/test") in seen
+
+        # Simulate seen_ids loss (restore from backup)
+        seen.clear()
+        # Second save — file exists but seen is empty
+        stats2 = pc.save_articles(articles, "gcp", seen, min_score=0.0, raw_dir=tmp_path)
+        # Should NOT create a second file, should heal seen_ids
+        files = list((tmp_path / "gcp").glob("*.md"))
+        assert len(files) == 1  # still only 1 file
+        assert pc.prac_paper_id("https://cloud.google.com/blog/test") in seen  # healed
