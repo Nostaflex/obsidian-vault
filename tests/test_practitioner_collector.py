@@ -245,6 +245,29 @@ class TestFormatAsMarkdown:
         assert "<!-- source-url:" in md
         assert "https://cloud.google.com/blog/cloud-run" in md
 
+    def test_url_with_newline_sanitised_in_frontmatter(self):
+        """URL containing newline must not inject a new YAML key."""
+        article = self._make_article(url="https://cloud.google.com/blog/test\ninjected: evil")
+        md = pc.format_as_markdown(article, domain="gcp")
+        frontmatter = md.split("---")[1]
+        # Newline must be replaced — no line should start with "injected:"
+        for line in frontmatter.split("\n"):
+            assert not line.startswith("injected:"), "newline in URL injected a YAML key"
+        # source_url value should be on a single line (newline replaced with space)
+        source_url_lines = [l for l in frontmatter.split("\n") if l.startswith("source_url:")]
+        assert len(source_url_lines) == 1, "source_url spans multiple lines — newline not sanitised"
+
+    def test_title_with_backslash_sanitised_in_frontmatter(self):
+        """Backslash in title must be escaped so YAML scalar stays valid."""
+        article = self._make_article(title='Cloud Run \\ Guide "fast"')
+        md = pc.format_as_markdown(article, domain="gcp")
+        for line in md.split("\n"):
+            if line.startswith("title:"):
+                assert "\\\\" in line or line.count("\\") % 2 == 0, (
+                    "odd number of backslashes — YAML escape broken"
+                )
+                break
+
     def test_format_as_markdown_title_with_quotes_escaped(self):
         article = self._make_article(title='Cloud Run "Serverless" Guide')
         md = pc.format_as_markdown(article, domain="gcp")

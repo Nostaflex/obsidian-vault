@@ -110,7 +110,7 @@ elif [ "$INTEGRITY_RC" -ne 0 ]; then
 fi
 
 # 1b. Collecte praticienne (weekends automatique + FORCE_PRACTITIONER=1 pour run manuel)
-_is_weekend() { day=$(date +%u); [ "$day" -ge 6 ]; }
+_is_weekend() { local day; day=$(date +%u); [ "$day" -ge 6 ]; }
 if [ "${FORCE_PRACTITIONER:-0}" = "1" ] || _is_weekend; then
   echo "→ practitioner-collector..." >> "$LOG"
   python3 "$VAULT/practitioner_collector.py" --since 7 >> "$LOG" 2>&1 || \

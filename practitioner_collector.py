@@ -323,6 +323,14 @@ def fetch_hn(domain: str, since_days: int = DEFAULT_SINCE,
 
 # ── Paper ID + Frontmatter ────────────────────────────────────────────────────
 
+def _safe_yaml(s: str) -> str:
+    """Sanitise une valeur pour l'inclure dans un scalaire YAML double-quoté.
+
+    Protège contre l'injection via retours à la ligne et séquences d'échappement.
+    """
+    return s.replace("\r", " ").replace("\n", " ").replace("\\", "\\\\").replace('"', "'")
+
+
 def prac_paper_id(url: str) -> str:
     """Génère un paper_id stable depuis l'URL. Préfixe 'prac-' (8 hex chars)."""
     return PRAC_PREFIX + hashlib.md5(url.encode("utf-8"), usedforsecurity=False).hexdigest()[:8]
@@ -345,8 +353,9 @@ def format_as_markdown(article: dict, domain: str) -> str:
     date_str = pub_date.strftime("%Y-%m-%d") if pub_date else datetime.utcnow().strftime("%Y-%m-%d")
     collected = datetime.utcnow().strftime("%Y-%m-%d")
 
-    # Escape double quotes in title to avoid YAML breakage
-    title_safe = title.replace('"', "'")
+    # Sanitise values embedded in YAML double-quoted scalars
+    title_safe = _safe_yaml(title)
+    url_safe = _safe_yaml(url)
 
     kw_yaml = "\n".join(f'  - "{k}"' for k in keywords)
     kw_block = f"\n{kw_yaml}" if kw_yaml else " []"
@@ -356,7 +365,7 @@ type: paper
 domain: {domain}
 paper_id: "{paper_id}"
 source: practitioner
-source_url: "{url}"
+source_url: "{url_safe}"
 title: "{title_safe}"
 date: "{date_str}"
 relevance_score: {round(score, 4)}
@@ -371,7 +380,7 @@ collected: "{collected}"
 
 **Source :** practitioner · {date_str}
 
-<!-- source-url: {url} -->
+<!-- source-url: {url_safe} -->
 """
 
 
