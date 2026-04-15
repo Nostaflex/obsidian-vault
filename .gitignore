@@ -28,6 +28,8 @@ _logs/conversations-processed.json.bak
 _logs/seen-paper-ids.txt
 _logs/corpus-rebuild.log
 _logs/weekly-extractor.log
+_logs/session-checkpoint.json
+_logs/last-nightly.json.bak
 
 # Local plugin/editor state (never relevant to vault content)
 .superpowers/
