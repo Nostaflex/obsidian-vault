@@ -319,3 +319,57 @@ def fetch_hn(domain: str, since_days: int = DEFAULT_SINCE,
             })
 
     return articles
+
+
+# ── Paper ID + Frontmatter ────────────────────────────────────────────────────
+
+def prac_paper_id(url: str) -> str:
+    """Génère un paper_id stable depuis l'URL. Préfixe 'prac-' (8 hex chars)."""
+    return PRAC_PREFIX + hashlib.md5(url.encode("utf-8"), usedforsecurity=False).hexdigest()[:8]
+
+
+def format_as_markdown(article: dict, domain: str) -> str:
+    """
+    Convertit un article praicien en markdown avec frontmatter compatible paper_synthesizer.py.
+    Champs identiques à corpus_collector.py : type, domain, paper_id, source, source_url,
+    title, date, relevance_score, tier, keywords, collected.
+    """
+    title = article.get("title", "")
+    url = article.get("url", "")
+    summary = article.get("summary", "") or "(résumé non disponible)"
+    paper_id = article.get("paper_id") or prac_paper_id(url)
+    score = article.get("relevance_score", 0.0)
+    tier = article.get("tier", "B")
+    keywords = article.get("keywords", [])
+    pub_date = article.get("published_date")
+    date_str = pub_date.strftime("%Y-%m-%d") if pub_date else datetime.utcnow().strftime("%Y-%m-%d")
+    collected = datetime.utcnow().strftime("%Y-%m-%d")
+
+    # Escape double quotes in title to avoid YAML breakage
+    title_safe = title.replace('"', "'")
+
+    kw_yaml = "\n".join(f'  - "{k}"' for k in keywords)
+    kw_block = f"\n{kw_yaml}" if kw_yaml else " []"
+
+    return f"""---
+type: paper
+domain: {domain}
+paper_id: "{paper_id}"
+source: practitioner
+source_url: "{url}"
+title: "{title_safe}"
+date: "{date_str}"
+relevance_score: {round(score, 4)}
+tier: {tier}
+keywords:{kw_block}
+collected: "{collected}"
+---
+
+# {title}
+
+**Résumé :** {summary[:800]}
+
+**Source :** practitioner · {date_str}
+
+<!-- source-url: {url} -->
+"""

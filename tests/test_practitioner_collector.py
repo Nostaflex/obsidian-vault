@@ -194,3 +194,59 @@ class TestFetchHn:
         # Should NOT be epoch (1970)
         epoch = datetime(1970, 1, 2)  # small buffer for timezone differences
         assert articles[0]["published_date"] > epoch
+
+
+class TestFormatAsMarkdown:
+    def _make_article(self, **kwargs):
+        defaults = {
+            "title": "Cloud Run: Zero to Production",
+            "url": "https://cloud.google.com/blog/cloud-run",
+            "summary": "A deep dive into Cloud Run deployment patterns.",
+            "published_date": datetime(2026, 4, 14, 10, 0, 0),
+            "relevance_score": 0.72,
+            "tier": "A",
+            "keywords": ["cloud run", "serverless"],
+            "paper_id": "prac-a3f2c1b8",
+        }
+        defaults.update(kwargs)
+        return defaults
+
+    def test_frontmatter_contains_required_fields(self):
+        article = self._make_article()
+        md = pc.format_as_markdown(article, domain="gcp")
+        assert "type: paper" in md
+        assert "domain: gcp" in md
+        assert 'paper_id: "prac-' in md
+        assert "source: practitioner" in md
+        assert "relevance_score: 0.72" in md
+        assert "tier: A" in md
+        assert "Cloud Run: Zero to Production" in md
+
+    def test_prac_paper_id_is_stable_and_prefixed(self):
+        url = "https://cloud.google.com/blog/cloud-run"
+        id1 = pc.prac_paper_id(url)
+        id2 = pc.prac_paper_id(url)
+        assert id1 == id2
+        assert id1.startswith("prac-")
+        assert len(id1) == len("prac-") + 8  # prac- + 8 hex chars
+
+    def test_prac_paper_id_different_urls_differ(self):
+        id1 = pc.prac_paper_id("https://example.com/a")
+        id2 = pc.prac_paper_id("https://example.com/b")
+        assert id1 != id2
+
+    def test_format_as_markdown_has_source_url_comment(self):
+        article = self._make_article()
+        md = pc.format_as_markdown(article, domain="gcp")
+        assert "<!-- source-url:" in md
+        assert "https://cloud.google.com/blog/cloud-run" in md
+
+    def test_format_as_markdown_title_with_quotes_escaped(self):
+        article = self._make_article(title='Cloud Run "Serverless" Guide')
+        md = pc.format_as_markdown(article, domain="gcp")
+        # Title in frontmatter should not break YAML (quotes replaced or escaped)
+        # Find the title: line in frontmatter
+        for line in md.split("\n"):
+            if line.startswith("title:"):
+                assert '"Cloud Run "Serverless" Guide"' not in line  # no unescaped inner quotes
+                break
