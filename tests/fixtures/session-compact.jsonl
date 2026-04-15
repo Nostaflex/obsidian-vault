@@ -1,0 +1,5 @@
+{"type":"queue-operation","operation":"enqueue","timestamp":"2026-04-15T12:00:00.000Z","sessionId":"112233aabbcc"}
+{"type":"user","parentUuid":null,"isSidechain":false,"message":{"role":"user","content":[{"type":"text","text":"analysons le nightly"}]},"timestamp":"2026-04-15T12:00:01.000Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Nightly success. 16 notes ajoutées, 0 erreurs."}]},"timestamp":"2026-04-15T12:00:10.000Z"}
+{"type":"user","parentUuid":null,"isSidechain":false,"message":{"role":"user","content":[{"type":"text","text":"lance le nightly manuellement"}]},"timestamp":"2026-04-15T12:10:00.000Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Guard bypassé. Nightly lancé en background."},{"type":"tool_use","id":"t1","name":"Bash","input":{"command":"bash nightly-agent.sh"}}]},"timestamp":"2026-04-15T12:10:15.000Z"}
