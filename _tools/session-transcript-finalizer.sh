@@ -3,7 +3,8 @@
 # Responsabilité unique : WIP → note finalisée + cleanup checkpoint.
 # Déclenché par Claude Code au SessionEnd, APRÈS session-end-checkpoint.sh.
 #
-# Payload stdin : {"session_id": "...", "transcript_path": "..."} (ignoré)
+# Payload stdin : {"session_id": "...", "transcript_path": "..."}
+# session_id utilisé pour valider la cohérence avec le checkpoint.
 
 set -euo pipefail
 
@@ -15,12 +16,26 @@ PYTHON="$(command -v python3 2>/dev/null || echo '/usr/bin/python3')"
 
 # Safety
 [ -d "$VAULT" ] || exit 0
+
+# ── 1. Lire payload stdin ────────────────────────────────────────────────────
+
+payload=$(cat 2>/dev/null || echo '{}')
+payload_session_id=$("$PYTHON" -c \
+  "import json,sys; d=json.loads('$payload' if '$payload' != '' else '{}'); print(d.get('session_id',''))" 2>/dev/null || echo '')
+
+# ── 2. Lire le WIP path depuis checkpoint ────────────────────────────────────
+
 [ -f "$CHECKPOINT" ] || exit 0
 
-# ── 1. Lire le WIP path depuis checkpoint ────────────────────────────────────
-
+ck_session_id=$("$PYTHON" -c \
+  "import json; print(json.load(open('$CHECKPOINT')).get('session_id',''))" 2>/dev/null || echo '')
 wip_path=$("$PYTHON" -c \
   "import json; print(json.load(open('$CHECKPOINT')).get('wip_path',''))" 2>/dev/null || echo '')
+
+# Si payload session_id présent et incohérent avec checkpoint → skip (session différente)
+if [ -n "$payload_session_id" ] && [ -n "$ck_session_id" ] && [ "$payload_session_id" != "$ck_session_id" ]; then
+  exit 0
+fi
 
 # Pas de WIP = session sans décisions capturées → exit propre
 if [ -z "$wip_path" ] || [ ! -f "$wip_path" ]; then

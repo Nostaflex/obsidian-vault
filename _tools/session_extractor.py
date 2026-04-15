@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -193,7 +194,18 @@ def detect_decision_closures(messages: list) -> list:
                     action_summary = m.group(0).strip()
                     break
             if not action_summary and prev_assistant_text:
-                action_summary = prev_assistant_text[:100].replace('\n', ' ').strip()
+                # Extraire la première phrase substantielle (skip tableaux/headers/listes)
+                for line in prev_assistant_text.split('\n'):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if re.match(r'^[|#\-*`>]|^\d+\.', line):
+                        continue
+                    if len(line) > 30:
+                        action_summary = line[:120]
+                        break
+                if not action_summary:
+                    action_summary = prev_assistant_text[:100].replace('\n', ' ').strip()
 
             decisions.append({
                 'intention': intention,
@@ -309,13 +321,28 @@ def main():
 
     last_offset = 0
     started_at = ''
+    prev_session_id = ''
+    prev_wip_path = ''
     try:
         with open(args.checkpoint) as f:
             ck = json.load(f)
             last_offset = ck.get('last_offset', 0)
             started_at = ck.get('started_at', '')
+            prev_session_id = ck.get('session_id', '')
+            prev_wip_path = ck.get('wip_path', '')
     except (FileNotFoundError, json.JSONDecodeError):
         pass
+
+    # Nouvelle session détectée — archiver l'ancien WIP orphelin si existant
+    if prev_session_id and prev_session_id != args.session_id and prev_wip_path:
+        prev_wip = Path(prev_wip_path)
+        if prev_wip.exists():
+            date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            archive_name = f"session-{date_str}-{prev_session_id[:6]}-interrupted.md"
+            archive_path = prev_wip.parent / archive_name
+            prev_wip.rename(archive_path)
+        last_offset = 0
+        started_at = ''
 
     try:
         with open(args.transcript) as f:
@@ -325,6 +352,14 @@ def main():
         sys.exit(0)
 
     messages = parse_delta(args.transcript, last_offset)
+
+    # Initialiser started_at au premier appel (premier message du delta ou now)
+    if not started_at:
+        if messages and messages[0].get('timestamp'):
+            started_at = messages[0]['timestamp']
+        else:
+            started_at = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
     if not messages:
         update_checkpoint(args.checkpoint, args.session_id,
                          args.transcript, current_lines,
@@ -357,7 +392,6 @@ def _wip_path(wip_dir: str, session_short: str) -> Path:
 
 
 def _log(log_path: str, message: str) -> None:
-    from datetime import datetime, timezone
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     try:
         with open(log_path, 'a') as f:
