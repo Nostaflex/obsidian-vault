@@ -148,3 +148,49 @@ class TestFetchHn:
 
         # firebase has 3 keywords — same URL across all calls should yield 1 article
         assert len(articles) == 1
+
+    def test_fetch_hn_fallback_url_when_no_external_url(self):
+        """Hit with no external url but valid objectID should use HN item URL."""
+        hits = [
+            {"title": "Firebase tips", "url": None,
+             "objectID": "999", "points": 75,
+             "created_at_i": int((datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()),
+             "story_text": "Some text"},
+        ]
+        response_bytes = json.dumps({"hits": hits}).encode()
+
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_resp = MagicMock()
+            mock_resp.read.return_value = response_bytes
+            mock_resp.__enter__ = lambda s: s
+            mock_resp.__exit__ = MagicMock(return_value=False)
+            mock_open.return_value = mock_resp
+
+            articles = pc.fetch_hn("firebase", since_days=7)
+
+        assert len(articles) == 1
+        assert articles[0]["url"] == "https://news.ycombinator.com/item?id=999"
+
+    def test_fetch_hn_missing_created_at_defaults_to_now(self):
+        """Hit with missing created_at_i should get utcnow() as published_date, not epoch."""
+        hits = [
+            {"title": "Firebase scaling", "url": "https://firebase.blog/test",
+             "objectID": "888", "points": 60,
+             "story_text": ""},
+            # Note: no created_at_i field
+        ]
+        response_bytes = json.dumps({"hits": hits}).encode()
+
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_resp = MagicMock()
+            mock_resp.read.return_value = response_bytes
+            mock_resp.__enter__ = lambda s: s
+            mock_resp.__exit__ = MagicMock(return_value=False)
+            mock_open.return_value = mock_resp
+
+            articles = pc.fetch_hn("firebase", since_days=7)
+
+        assert len(articles) == 1
+        # Should NOT be epoch (1970)
+        epoch = datetime(1970, 1, 2)  # small buffer for timezone differences
+        assert articles[0]["published_date"] > epoch

@@ -281,10 +281,10 @@ def fetch_hn(domain: str, since_days: int = DEFAULT_SINCE,
             "numericFilters": f"created_at_i>{since_ts}",
             "hitsPerPage": 10,
         })
-        url = f"{HN_ALGOLIA}?{params}"
+        algolia_url = f"{HN_ALGOLIA}?{params}"
         try:
             req = urllib.request.Request(
-                url, headers={"User-Agent": "PractitionerCollector/1.0"}
+                algolia_url, headers={"User-Agent": "PractitionerCollector/1.0"}
             )
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read())
@@ -297,14 +297,19 @@ def fetch_hn(domain: str, since_days: int = DEFAULT_SINCE,
             points = hit.get("points") or 0
             if points < HN_MIN_POINTS:
                 continue
-            url_story = (hit.get("url")
-                         or f"https://news.ycombinator.com/item?id={hit.get('objectID', '')}")
+            url_story = hit.get("url") or (
+                f"https://news.ycombinator.com/item?id={hit['objectID']}"
+                if hit.get("objectID") else None
+            )
+            if not url_story:
+                continue
             if url_story in seen_urls:
                 continue
             seen_urls.add(url_story)
 
-            created_ts = hit.get("created_at_i", 0)
-            pub_date = datetime.fromtimestamp(created_ts, tz=timezone.utc).replace(tzinfo=None)
+            created_ts = hit.get("created_at_i") or 0
+            pub_date = (datetime.fromtimestamp(created_ts, tz=timezone.utc).replace(tzinfo=None)
+                        if created_ts > 0 else datetime.utcnow())
 
             articles.append({
                 "title": hit.get("title", ""),
