@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-practitioner_collector.py — Collecte praicienne pour architecte solution cloud.
+practitioner_collector.py — Collecte praticienne pour architecte solution cloud.
 Sources : RSS blogs officiels + Hacker News Algolia API.
 Domaines : gcp, firebase, cloud-native, architecture, devops, ai-engineering, security.
 Usage : python3 practitioner_collector.py [--domain DOMAIN] [--since DAYS] [--max N]
@@ -109,7 +109,7 @@ def score_to_tier(score: float) -> str:
 def score_article(title: str, summary: str, domain: str,
                   published_date: datetime) -> float:
     """
-    Score de pertinence 0.0-1.0 pour un article praicien.
+    Score de pertinence 0.0-1.0 pour un article praticien.
 
     Composantes :
     - keyword match titre (max 0.5) : chaque keyword +0.25
@@ -330,7 +330,7 @@ def prac_paper_id(url: str) -> str:
 
 def format_as_markdown(article: dict, domain: str) -> str:
     """
-    Convertit un article praicien en markdown avec frontmatter compatible paper_synthesizer.py.
+    Convertit un article praticien en markdown avec frontmatter compatible paper_synthesizer.py.
     Champs identiques à corpus_collector.py : type, domain, paper_id, source, source_url,
     title, date, relevance_score, tier, keywords, collected.
     """
@@ -401,7 +401,7 @@ def save_articles(articles: list, domain: str, seen_ids: set,
                   min_score: float = DEFAULT_MIN_SCORE,
                   raw_dir: Path = None, dry_run: bool = False) -> dict:
     """
-    Score, filtre et sauvegarde les articles praiciens.
+    Score, filtre et sauvegarde les articles praticiens.
 
     Returns stats: {saved, duplicates, tier_c_filtered, would_save, tier_counts}.
     seen_ids is mutated in-place — caller must persist with save_seen_ids().
@@ -491,6 +491,8 @@ def run(domain_filter: str = None, since_days: int = DEFAULT_SINCE,
     force: ignore seen_ids (re-collecte tout).
     raw_dir / seen_ids_file: overrides pour tests (évite d'écrire dans le vault réel).
     """
+    if force and dry_run:
+        _log("WARNING: --force + --dry-run combinés : seen_ids ignorés et non persistés")
     targets = ({domain_filter: DOMAINS_RSS[domain_filter]}
                if domain_filter else DOMAINS_RSS)
 
@@ -533,7 +535,7 @@ def run(domain_filter: str = None, since_days: int = DEFAULT_SINCE,
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Collecte praicienne RSS+HN pour architecte solution cloud."
+        description="Collecte praticienne RSS+HN pour architecte solution cloud."
     )
     parser.add_argument(
         "--domain", choices=list(DOMAINS_RSS.keys()),
