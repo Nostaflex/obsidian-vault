@@ -91,3 +91,47 @@ DOMAIN_FALLBACK_KEYWORDS = {
     "security":       ["zero trust", "iam", "owasp", "soc2", "oauth",
                        "cloud security", "devsecops", "secret", "vault"],
 }
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def score_to_tier(score: float) -> str:
+    """Convertit un score 0.0-1.0 en tier S/A/B/C."""
+    if score >= 0.7:
+        return "S"
+    if score >= 0.5:
+        return "A"
+    if score >= 0.3:
+        return "B"
+    return "C"
+
+
+def score_article(title: str, summary: str, domain: str,
+                  published_date: datetime) -> float:
+    """
+    Score de pertinence 0.0-1.0 pour un article praicien.
+
+    Composantes :
+    - keyword match titre (max 0.5) : chaque keyword +0.25
+    - keyword match résumé (max 0.2) : chaque keyword +0.05
+    - recency (max 0.3) : décroissance exponentielle exp(-0.1 * age_days)
+    """
+    keywords = DOMAIN_FALLBACK_KEYWORDS.get(domain, [])
+    title_lower = title.lower()
+    summary_lower = summary.lower()
+
+    title_matches = sum(1 for kw in keywords if kw in title_lower)
+    score = min(title_matches * 0.25, 0.5)
+
+    summary_matches = sum(1 for kw in keywords if kw in summary_lower)
+    score += min(summary_matches * 0.05, 0.2)
+
+    # Recency — normaliser la date en UTC naive pour le calcul
+    if published_date.tzinfo is not None:
+        pub_naive = published_date.astimezone(timezone.utc).replace(tzinfo=None)
+    else:
+        pub_naive = published_date
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    age_days = max(0, (now_naive - pub_naive).days)
+    score += 0.3 * math.exp(-0.1 * age_days)
+
+    return min(score, 1.0)

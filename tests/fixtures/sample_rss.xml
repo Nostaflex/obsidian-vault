@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Test Feed</title>
+    <item>
+      <title>Deploying to Cloud Run with Terraform</title>
+      <link>https://example.com/cloud-run-terraform</link>
+      <description>A guide to deploying GCP Cloud Run services using Terraform IaC patterns.</description>
+      <pubDate>Mon, 14 Apr 2026 10:00:00 +0000</pubDate>
+    </item>
+    <item>
+      <title>Recipe: The Perfect Sourdough Bread</title>
+      <link>https://example.com/sourdough</link>
+      <description>How to bake a perfect sourdough loaf at home.</description>
+      <pubDate>Mon, 14 Apr 2026 10:00:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>
