@@ -131,7 +131,7 @@ def score_article(title: str, summary: str, domain: str,
     else:
         pub_naive = published_date
     now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
-    age_days = max(0, (now_naive - pub_naive).days)
+    age_days = max(0.0, (now_naive - pub_naive).total_seconds() / 86400)
     score += 0.3 * math.exp(-0.1 * age_days)
 
     return min(score, 1.0)

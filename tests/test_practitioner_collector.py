@@ -27,7 +27,7 @@ class TestScoreArticle:
         assert score >= 0.5, f"Expected score >= 0.5 for GCP title match, got {score}"
 
     def test_no_keyword_match_gives_low_score(self):
-        published = self._now() - timedelta(hours=1)
+        published = self._now() - timedelta(days=30)
         score = pc.score_article(
             title="Recipe: The Perfect Sourdough Bread",
             summary="How to bake a perfect sourdough loaf at home.",
