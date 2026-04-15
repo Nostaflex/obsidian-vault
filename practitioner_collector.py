@@ -469,3 +469,107 @@ def save_articles(articles: list, domain: str, seen_ids: set,
         seen_ids.add(paper_id)  # always heal seen_ids gap even if file already on disk
 
     return stats
+
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+
+def _log(message: str) -> None:
+    ts = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    print(f"{ts} | {message}")
+
+
+# ── Orchestration ─────────────────────────────────────────────────────────────
+
+def run(domain_filter: str = None, since_days: int = DEFAULT_SINCE,
+        max_per_domain: int = DEFAULT_MAX, min_score: float = DEFAULT_MIN_SCORE,
+        dry_run: bool = False, force: bool = False,
+        raw_dir: Path = None, seen_ids_file: Path = None) -> None:
+    """
+    Orchestration principale. Paramètres exposés pour les tests d'intégration.
+
+    domain_filter: si fourni, ne traite que ce domaine.
+    force: ignore seen_ids (re-collecte tout).
+    raw_dir / seen_ids_file: overrides pour tests (évite d'écrire dans le vault réel).
+    """
+    targets = ({domain_filter: DOMAINS_RSS[domain_filter]}
+               if domain_filter else DOMAINS_RSS)
+
+    seen_ids = load_seen_ids(seen_ids_file) if not force else set()
+
+    total_saved = 0
+    total_skipped = 0
+
+    for domain, feeds in targets.items():
+        _log(f"Domain {domain}: collecte RSS ({len(feeds)} feeds) …")
+        articles: list = []
+
+        for feed_url in feeds:
+            fetched = fetch_rss(feed_url)
+            _log(f"  {feed_url}: {len(fetched)} articles")
+            articles.extend(fetched)
+
+        hn_articles = fetch_hn(domain, since_days=since_days)
+        _log(f"  HN ({domain}): {len(hn_articles)} articles")
+        articles.extend(hn_articles)
+
+        # Tronquer avant scoring — évite traitement inutile de centaines d'articles
+        articles = articles[: max_per_domain * 3]
+
+        stats = save_articles(articles, domain, seen_ids,
+                              min_score=min_score, raw_dir=raw_dir, dry_run=dry_run)
+
+        _log(f"  → saved={stats['saved']} dup={stats['duplicates']} "
+             f"tier_c={stats['tier_c_filtered']} tiers={stats['tier_counts']}")
+        total_saved += stats["saved"] + stats.get("would_save", 0)
+        total_skipped += stats["duplicates"] + stats["tier_c_filtered"]
+
+    if not dry_run and not force:
+        save_seen_ids(seen_ids, seen_ids_file)
+
+    _log(f"DONE | saved={total_saved} skipped={total_skipped}")
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Collecte praicienne RSS+HN pour architecte solution cloud."
+    )
+    parser.add_argument(
+        "--domain", choices=list(DOMAINS_RSS.keys()),
+        help="Domaine ciblé (défaut: tous)"
+    )
+    parser.add_argument(
+        "--since", type=int, default=DEFAULT_SINCE,
+        help=f"Fenêtre en jours (défaut: {DEFAULT_SINCE})"
+    )
+    parser.add_argument(
+        "--max", type=int, default=DEFAULT_MAX, dest="max_per_domain",
+        help=f"Max articles par domaine avant scoring (défaut: {DEFAULT_MAX})"
+    )
+    parser.add_argument(
+        "--min-score", type=float, default=DEFAULT_MIN_SCORE,
+        help=f"Score minimum pour sauvegarde (défaut: {DEFAULT_MIN_SCORE})"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Affiche ce qui serait collecté sans écrire"
+    )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="Ignore seen_ids — re-collecte même les articles déjà vus"
+    )
+    args = parser.parse_args()
+
+    run(
+        domain_filter=args.domain,
+        since_days=args.since,
+        max_per_domain=args.max_per_domain,
+        min_score=args.min_score,
+        dry_run=args.dry_run,
+        force=args.force,
+    )
+
+
+if __name__ == "__main__":
+    main()
