@@ -328,7 +328,7 @@ def main():
     if not messages:
         update_checkpoint(args.checkpoint, args.session_id,
                          args.transcript, current_lines,
-                         _wip_path(args.wip_dir, args.session_id),
+                         str(_wip_path(args.wip_dir, args.session_id)),
                          started_at)
         sys.exit(0)
 
