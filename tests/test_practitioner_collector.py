@@ -218,8 +218,12 @@ class TestFormatAsMarkdown:
         assert "domain: gcp" in md
         assert 'paper_id: "prac-' in md
         assert "source: practitioner" in md
+        assert 'source_url: "https://cloud.google.com/blog/cloud-run"' in md
         assert "relevance_score: 0.72" in md
         assert "tier: A" in md
+        assert 'date: "2026-04-14"' in md
+        assert "cloud run" in md  # keyword present
+        assert "collected:" in md
         assert "Cloud Run: Zero to Production" in md
 
     def test_prac_paper_id_is_stable_and_prefixed(self):
@@ -244,9 +248,21 @@ class TestFormatAsMarkdown:
     def test_format_as_markdown_title_with_quotes_escaped(self):
         article = self._make_article(title='Cloud Run "Serverless" Guide')
         md = pc.format_as_markdown(article, domain="gcp")
-        # Title in frontmatter should not break YAML (quotes replaced or escaped)
-        # Find the title: line in frontmatter
+        # Title in frontmatter: double quotes replaced by single quotes
         for line in md.split("\n"):
             if line.startswith("title:"):
                 assert '"Cloud Run "Serverless" Guide"' not in line  # no unescaped inner quotes
+                assert "Cloud Run 'Serverless' Guide" in line  # single quotes substituted
+                break
+
+    def test_format_as_markdown_summary_truncated_at_800(self):
+        long_summary = "x" * 1200
+        article = self._make_article(summary=long_summary)
+        md = pc.format_as_markdown(article, domain="gcp")
+        # Summary in body should be at most 800 chars (from [:800] in format_as_markdown)
+        # The Résumé line contains the summary
+        for line in md.split("\n"):
+            if line.startswith("**Résumé :**"):
+                summary_content = line.replace("**Résumé :** ", "")
+                assert len(summary_content) <= 800
                 break
