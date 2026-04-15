@@ -135,3 +135,120 @@ def score_article(title: str, summary: str, domain: str,
     score += 0.3 * math.exp(-0.1 * age_days)
 
     return min(score, 1.0)
+
+
+# ── Date parsing ──────────────────────────────────────────────────────────────
+
+def parse_date(date_str: str) -> datetime:
+    """
+    Parse RFC 2822 (RSS pubDate) ou ISO 8601 (Atom).
+    Retourne datetime UTC naive. Si échec → datetime.utcnow().
+    """
+    if not date_str:
+        return datetime.utcnow()
+    # RFC 2822 (ex: "Tue, 15 Apr 2026 12:00:00 +0000")
+    try:
+        dt = parsedate_to_datetime(date_str)
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    except Exception:
+        pass
+    # ISO 8601 (ex: "2026-04-15T12:00:00Z" ou "2026-04-15")
+    for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d"):
+        try:
+            s = date_str[:len(fmt)]
+            dt = datetime.strptime(s, fmt)
+            return dt.replace(tzinfo=None) if dt.tzinfo is None else dt.astimezone(timezone.utc).replace(tzinfo=None)
+        except ValueError:
+            continue
+    return datetime.utcnow()
+
+
+# ── RSS parsing ───────────────────────────────────────────────────────────────
+
+# Namespaces courants dans les feeds Atom/RSS
+_NS = {
+    "atom": "http://www.w3.org/2005/Atom",
+    "content": "http://purl.org/rss/1.0/modules/content/",
+    "dc": "http://purl.org/dc/elements/1.1/",
+}
+
+
+def _text(el, *tags) -> str:
+    """Cherche le premier tag non-vide parmi les candidats. Retourne '' si rien."""
+    for tag in tags:
+        child = el.find(tag)
+        if child is not None and child.text:
+            return child.text.strip()
+    return ""
+
+
+def parse_rss_content(xml_bytes: bytes) -> list:
+    """
+    Parse du contenu RSS/Atom brut (bytes).
+    Retourne une liste de dicts : {title, url, summary, published_date}.
+    Retourne [] si le XML est invalide ou vide.
+    """
+    try:
+        root = ET.fromstring(xml_bytes)
+    except ET.ParseError:
+        return []
+
+    articles = []
+
+    # Format RSS 2.0 : <rss><channel><item>
+    for item in root.iter("item"):
+        title = _text(item, "title")
+        url = _text(item, "link")
+        summary = _text(item, "description",
+                        f"{{{_NS['content']}}}encoded")
+        pub_date = _text(item, "pubDate",
+                         f"{{{_NS['dc']}}}date")
+        if not title or not url:
+            continue
+        articles.append({
+            "title": title,
+            "url": url,
+            "summary": re.sub(r"<[^>]+>", " ", summary)[:500],
+            "published_date": parse_date(pub_date),
+        })
+
+    # Format Atom : <feed><entry>
+    for entry in root.iter(f"{{{_NS['atom']}}}entry"):
+        title_el = entry.find(f"{{{_NS['atom']}}}title")
+        link_el = (entry.find(f"{{{_NS['atom']}}}link[@rel='alternate']") or
+                   entry.find(f"{{{_NS['atom']}}}link"))
+        summary_el = (entry.find(f"{{{_NS['atom']}}}summary") or
+                      entry.find(f"{{{_NS['atom']}}}content"))
+        updated_el = (entry.find(f"{{{_NS['atom']}}}updated") or
+                      entry.find(f"{{{_NS['atom']}}}published"))
+
+        title = title_el.text.strip() if title_el is not None and title_el.text else ""
+        url = link_el.get("href", "") if link_el is not None else ""
+        summary = summary_el.text or "" if summary_el is not None else ""
+        pub_date = updated_el.text or "" if updated_el is not None else ""
+
+        if not title or not url:
+            continue
+        articles.append({
+            "title": title,
+            "url": url,
+            "summary": re.sub(r"<[^>]+>", " ", summary)[:500],
+            "published_date": parse_date(pub_date),
+        })
+
+    return articles
+
+
+def fetch_rss(url: str, timeout: int = FETCH_TIMEOUT) -> list:
+    """
+    Fetch + parse un feed RSS/Atom depuis une URL.
+    Retourne [] si timeout, erreur réseau ou XML invalide.
+    """
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "PractitionerCollector/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            content = resp.read()
+        return parse_rss_content(content)
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+        print(f"[SKIP] {url}: {e}")
+        return []

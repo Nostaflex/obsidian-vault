@@ -52,3 +52,26 @@ class TestScoreArticle:
             published_date=published,
         )
         assert score <= 1.0
+
+
+class TestParseRss:
+    FIXTURE_PATH = Path(__file__).parent / "fixtures" / "sample_rss.xml"
+
+    def test_parse_valid_rss_returns_articles(self):
+        xml_content = self.FIXTURE_PATH.read_bytes()
+        articles = pc.parse_rss_content(xml_content)
+        assert len(articles) == 2
+        assert articles[0]["title"] == "Deploying to Cloud Run with Terraform"
+        assert articles[0]["url"] == "https://example.com/cloud-run-terraform"
+        assert "cloud run" in articles[0]["summary"].lower()
+        assert isinstance(articles[0]["published_date"], datetime)
+
+    def test_parse_malformed_xml_returns_empty(self):
+        malformed = b"<rss><channel><item><title>Broken</title>"  # not closed
+        articles = pc.parse_rss_content(malformed)
+        assert articles == []
+
+    def test_parse_empty_feed_returns_empty(self):
+        empty = b'<?xml version="1.0"?><rss version="2.0"><channel></channel></rss>'
+        articles = pc.parse_rss_content(empty)
+        assert articles == []
