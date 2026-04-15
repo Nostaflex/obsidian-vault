@@ -109,6 +109,14 @@ elif [ "$INTEGRITY_RC" -ne 0 ]; then
   exit 1
 fi
 
+# 1b. Collecte praticienne (weekends automatique + FORCE_PRACTITIONER=1 pour run manuel)
+_is_weekend() { day=$(date +%u); [ "$day" -ge 6 ]; }
+if [ "${FORCE_PRACTITIONER:-0}" = "1" ] || _is_weekend; then
+  echo "→ practitioner-collector..." >> "$LOG"
+  python3 "$VAULT/practitioner_collector.py" --since 7 >> "$LOG" 2>&1 || \
+    echo "⚠️  practitioner_collector a échoué (exit $?) — run nocturne continue" >> "$LOG"
+fi
+
 # 2. Lancer l'agent nocturne
 echo "→ Lancement agent nocturne..." >> "$LOG"
 claude --print "$(cat "$PROMPT")" \
