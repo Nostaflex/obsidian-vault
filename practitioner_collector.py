@@ -9,6 +9,7 @@ Usage : python3 practitioner_collector.py [--domain DOMAIN] [--since DAYS] [--ma
 
 import argparse
 import hashlib
+import http.client
 import json
 import math
 import os
@@ -155,8 +156,8 @@ def parse_date(date_str: str) -> datetime:
     # ISO 8601 (ex: "2026-04-15T12:00:00Z" ou "2026-04-15")
     for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d"):
         try:
-            s = date_str[:len(fmt)]
-            dt = datetime.strptime(s, fmt)
+            input_str = date_str[:10] if fmt == "%Y-%m-%d" else date_str
+            dt = datetime.strptime(input_str, fmt)
             return dt.replace(tzinfo=None) if dt.tzinfo is None else dt.astimezone(timezone.utc).replace(tzinfo=None)
         except ValueError:
             continue
@@ -249,6 +250,6 @@ def fetch_rss(url: str, timeout: int = FETCH_TIMEOUT) -> list:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             content = resp.read()
         return parse_rss_content(content)
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError, http.client.HTTPException) as e:
         print(f"[SKIP] {url}: {e}")
         return []

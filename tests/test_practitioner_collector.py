@@ -75,3 +75,15 @@ class TestParseRss:
         empty = b'<?xml version="1.0"?><rss version="2.0"><channel></channel></rss>'
         articles = pc.parse_rss_content(empty)
         assert articles == []
+
+    def test_parse_valid_atom_returns_articles(self):
+        atom_fixture = Path(__file__).parent / "fixtures" / "sample_atom.xml"
+        xml_content = atom_fixture.read_bytes()
+        articles = pc.parse_rss_content(xml_content)
+        assert len(articles) == 1
+        assert articles[0]["title"] == "Kubernetes Operators Best Practices"
+        assert articles[0]["url"] == "https://example.com/k8s-operators"
+        assert isinstance(articles[0]["published_date"], datetime)
+        # Verify date was actually parsed (not utcnow fallback)
+        # The Atom date is 2026-04-14 so it should be in the past
+        assert articles[0]["published_date"] < datetime.utcnow()

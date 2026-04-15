@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Test Atom Feed</title>
+  <entry>
+    <title>Kubernetes Operators Best Practices</title>
+    <link rel="alternate" href="https://example.com/k8s-operators"/>
+    <summary>A guide to building Kubernetes operators for cloud-native platforms.</summary>
+    <updated>2026-04-14T10:00:00Z</updated>
+  </entry>
+</feed>
