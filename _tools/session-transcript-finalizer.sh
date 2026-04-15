@@ -20,8 +20,8 @@ PYTHON="$(command -v python3 2>/dev/null || echo '/usr/bin/python3')"
 # ── 1. Lire payload stdin ────────────────────────────────────────────────────
 
 payload=$(cat 2>/dev/null || echo '{}')
-payload_session_id=$("$PYTHON" -c \
-  "import json,sys; d=json.loads('$payload' if '$payload' != '' else '{}'); print(d.get('session_id',''))" 2>/dev/null || echo '')
+payload_session_id=$(printf '%s' "$payload" | "$PYTHON" -c \
+  "import json,sys; d=json.load(sys.stdin); print(d.get('session_id',''))" 2>/dev/null || echo '')
 
 # ── 2. Lire le WIP path depuis checkpoint ────────────────────────────────────
 

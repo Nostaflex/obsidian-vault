@@ -51,6 +51,10 @@ SKIP_PATTERNS = [
     r'^<ide_',               # IDE events
 ]
 
+IMPACT_TOOLS = {'Edit', 'Write', 'Bash', 'TodoWrite', 'NotebookEdit'}
+
+INTENTION_MAX_LEN = 150
+
 
 def parse_delta(transcript_path: str, last_offset: int) -> list:
     """
@@ -143,9 +147,8 @@ def score_message(msg: dict, prev_assistant: str = '') -> float:
     text_lower = text.lower().strip('.,!? ')
 
     # Amplificateur : mot court + contexte dans l'assistant précédent
-    impact_tools = {'Edit', 'Write', 'Bash', 'TodoWrite', 'NotebookEdit'}
     prev_tools = set(msg.get('_prev_tools', []))
-    has_impact = bool(prev_tools & impact_tools)
+    has_impact = bool(prev_tools & IMPACT_TOOLS)
     if text_lower in AMPLIFIERS or (len(text_lower.split()) <= 3 and any(a in text_lower for a in AMPLIFIERS)):
         if prev_assistant and any(re.search(p, prev_assistant, re.IGNORECASE) for p in PROPOSAL_PATTERNS):
             return min(0.85 + (0.1 if has_impact else 0.0), 1.0)
@@ -170,9 +173,7 @@ def score_message(msg: dict, prev_assistant: str = '') -> float:
         score += 0.3
 
     # Bonus si l'assistant précédent a utilisé des outils à effet concret
-    impact_tools = {'Edit', 'Write', 'Bash', 'TodoWrite', 'NotebookEdit'}
-    prev_tools = set(msg.get('_prev_tools', []))
-    if prev_tools & impact_tools:
+    if set(msg.get('_prev_tools', [])) & IMPACT_TOOLS:
         score += 0.2
 
     return min(score, 1.0)
@@ -203,7 +204,7 @@ def detect_decision_closures(messages: list) -> list:
         msg['_prev_tools'] = prev_assistant_tools
         score = score_message(msg, prev_assistant=prev_assistant_text)
         if score >= 0.5:
-            intention = msg['text'][:120].replace('\n', ' ').strip()
+            intention = msg['text'][:INTENTION_MAX_LEN].replace('\n', ' ').strip()
 
             action_summary = ''
             for pattern in CLOSURE_PATTERNS:
@@ -250,7 +251,7 @@ def render_wip_delta(decisions: list, session_id: str,
     for d in decisions:
         ts = d['timestamp'][:16].replace('T', ' ') if d['timestamp'] else ''
         tools_str = ', '.join(d['tools']) if d['tools'] else 'aucun'
-        lines.append(f"\n## [{ts}] {d['intention'][:150]}")
+        lines.append(f"\n## [{ts}] {d['intention']}")
         if d['action']:
             lines.append(f"**Action** : {d['action'][:120]}")
         lines.append(f"**Tools** : {tools_str}")
@@ -351,16 +352,17 @@ def main():
     except (FileNotFoundError, json.JSONDecodeError):
         pass
 
-    # Nouvelle session détectée — archiver l'ancien WIP orphelin si existant
-    if prev_session_id and prev_session_id != args.session_id and prev_wip_path:
-        prev_wip = Path(prev_wip_path)
-        if prev_wip.exists():
-            date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
-            archive_name = f"session-{date_str}-{prev_session_id[:6]}-interrupted.md"
-            archive_path = prev_wip.parent / archive_name
-            prev_wip.rename(archive_path)
+    # Nouvelle session détectée — reset état + archiver WIP orphelin si existant
+    if prev_session_id and prev_session_id != args.session_id:
         last_offset = 0
         started_at = ''
+        if prev_wip_path:
+            prev_wip = Path(prev_wip_path)
+            if prev_wip.exists():
+                date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+                archive_name = f"session-{date_str}-{prev_session_id[:6]}-interrupted.md"
+                archive_path = prev_wip.parent / archive_name
+                prev_wip.rename(archive_path)
 
     try:
         with open(args.transcript) as f:
