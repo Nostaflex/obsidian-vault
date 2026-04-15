@@ -143,11 +143,14 @@ def score_message(msg: dict, prev_assistant: str = '') -> float:
     text_lower = text.lower().strip('.,!? ')
 
     # Amplificateur : mot court + contexte dans l'assistant précédent
+    impact_tools = {'Edit', 'Write', 'Bash', 'TodoWrite', 'NotebookEdit'}
+    prev_tools = set(msg.get('_prev_tools', []))
+    has_impact = bool(prev_tools & impact_tools)
     if text_lower in AMPLIFIERS or (len(text_lower.split()) <= 3 and any(a in text_lower for a in AMPLIFIERS)):
         if prev_assistant and any(re.search(p, prev_assistant, re.IGNORECASE) for p in PROPOSAL_PATTERNS):
-            return 0.85
+            return min(0.85 + (0.1 if has_impact else 0.0), 1.0)
         if prev_assistant and len(prev_assistant) > 100:
-            return 0.6
+            return 0.8 if has_impact else 0.6
 
     # Message trop court sans amplificateur
     if len(text) < 4:
@@ -166,6 +169,12 @@ def score_message(msg: dict, prev_assistant: str = '') -> float:
     if msg.get('tools'):
         score += 0.3
 
+    # Bonus si l'assistant précédent a utilisé des outils à effet concret
+    impact_tools = {'Edit', 'Write', 'Bash', 'TodoWrite', 'NotebookEdit'}
+    prev_tools = set(msg.get('_prev_tools', []))
+    if prev_tools & impact_tools:
+        score += 0.2
+
     return min(score, 1.0)
 
 
@@ -176,13 +185,22 @@ def detect_decision_closures(messages: list) -> list:
     decisions = []
     prev_assistant_text = ''
     prev_assistant_tools = []
+    accumulated_tools = []
 
     for msg in messages:
         if msg['role'] == 'assistant':
-            prev_assistant_text = msg['text']
-            prev_assistant_tools = msg.get('tools', [])
+            if msg['text']:
+                prev_assistant_text = msg['text']
+            # Accumuler les tools sur tous les messages assistant consécutifs
+            accumulated_tools.extend(msg.get('tools', []))
             continue
 
+        # Message user — figer les tools accumulés
+        prev_assistant_tools = list(dict.fromkeys(accumulated_tools))  # dédupliqué, ordre préservé
+        accumulated_tools = []
+
+        # Injecter les tools dans le message pour le scoring
+        msg['_prev_tools'] = prev_assistant_tools
         score = score_message(msg, prev_assistant=prev_assistant_text)
         if score >= 0.5:
             intention = msg['text'][:120].replace('\n', ' ').strip()
@@ -231,8 +249,8 @@ def render_wip_delta(decisions: list, session_id: str,
 
     for d in decisions:
         ts = d['timestamp'][:16].replace('T', ' ') if d['timestamp'] else ''
-        tools_str = ', '.join(d['tools']) + f' ×{len(d["tools"])}' if d['tools'] else 'aucun'
-        lines.append(f"\n## [{ts}] {d['intention'][:80]}")
+        tools_str = ', '.join(d['tools']) if d['tools'] else 'aucun'
+        lines.append(f"\n## [{ts}] {d['intention'][:150]}")
         if d['action']:
             lines.append(f"**Action** : {d['action'][:120]}")
         lines.append(f"**Tools** : {tools_str}")
