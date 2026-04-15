@@ -253,3 +253,64 @@ def fetch_rss(url: str, timeout: int = FETCH_TIMEOUT) -> list:
     except (urllib.error.URLError, urllib.error.HTTPError, OSError, http.client.HTTPException) as e:
         print(f"[SKIP] {url}: {e}")
         return []
+
+
+# ── Hacker News (Algolia) ─────────────────────────────────────────────────────
+
+HN_ALGOLIA = "https://hn.algolia.com/api/v1/search"
+
+
+def fetch_hn(domain: str, since_days: int = DEFAULT_SINCE,
+             timeout: int = FETCH_TIMEOUT) -> list:
+    """
+    Fetch les top stories HN filtrées par domaine via Algolia API.
+    Retourne [] si erreur réseau ou réponse invalide.
+    Filtre : score HN >= HN_MIN_POINTS.
+    Déduplication interne par URL (une même story peut matcher plusieurs keywords).
+    """
+    keywords = DOMAIN_HN_KEYWORDS.get(domain, [])
+    since_ts = int(datetime.now(timezone.utc).timestamp()) - since_days * 86400
+
+    articles = []
+    seen_urls: set = set()
+
+    for keyword in keywords:
+        params = urllib.parse.urlencode({
+            "tags": "story",
+            "query": keyword,
+            "numericFilters": f"created_at_i>{since_ts}",
+            "hitsPerPage": 10,
+        })
+        url = f"{HN_ALGOLIA}?{params}"
+        try:
+            req = urllib.request.Request(
+                url, headers={"User-Agent": "PractitionerCollector/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read())
+        except (urllib.error.URLError, urllib.error.HTTPError,
+                OSError, http.client.HTTPException, json.JSONDecodeError) as e:
+            print(f"[SKIP HN] {keyword}: {e}")
+            continue
+
+        for hit in data.get("hits", []):
+            points = hit.get("points") or 0
+            if points < HN_MIN_POINTS:
+                continue
+            url_story = (hit.get("url")
+                         or f"https://news.ycombinator.com/item?id={hit.get('objectID', '')}")
+            if url_story in seen_urls:
+                continue
+            seen_urls.add(url_story)
+
+            created_ts = hit.get("created_at_i", 0)
+            pub_date = datetime.fromtimestamp(created_ts, tz=timezone.utc).replace(tzinfo=None)
+
+            articles.append({
+                "title": hit.get("title", ""),
+                "url": url_story,
+                "summary": (hit.get("story_text") or "")[:500],
+                "published_date": pub_date,
+            })
+
+    return articles

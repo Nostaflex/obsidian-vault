@@ -87,3 +87,64 @@ class TestParseRss:
         # Verify date was actually parsed (not utcnow fallback)
         # The Atom date is 2026-04-14 so it should be in the past
         assert articles[0]["published_date"] < datetime.utcnow()
+
+
+class TestFetchHn:
+    def _make_hn_response(self, hits: list) -> bytes:
+        return json.dumps({"hits": hits}).encode()
+
+    def test_fetch_hn_returns_articles_above_min_points(self):
+        hits = [
+            {"title": "How we scaled Firestore at Firebase", "url": "https://firebase.blog/scale",
+             "objectID": "111", "points": 120,
+             "created_at_i": int((datetime.now(timezone.utc) - timedelta(hours=2)).timestamp()),
+             "story_text": ""},
+            {"title": "Low quality post", "url": "https://example.com/low",
+             "objectID": "222", "points": 10,
+             "created_at_i": int((datetime.now(timezone.utc) - timedelta(hours=2)).timestamp()),
+             "story_text": ""},
+        ]
+        response_bytes = self._make_hn_response(hits)
+
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_resp = MagicMock()
+            mock_resp.read.return_value = response_bytes
+            mock_resp.__enter__ = lambda s: s
+            mock_resp.__exit__ = MagicMock(return_value=False)
+            mock_open.return_value = mock_resp
+
+            articles = pc.fetch_hn("firebase", since_days=7)
+
+        assert len(articles) == 1
+        assert articles[0]["title"] == "How we scaled Firestore at Firebase"
+
+    def test_fetch_hn_network_error_returns_empty(self):
+        with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("timeout")):
+            articles = pc.fetch_hn("firebase", since_days=7)
+        assert articles == []
+
+    def test_fetch_hn_deduplicates_same_url(self):
+        """Same URL returned by two keywords should appear only once."""
+        hits = [
+            {"title": "Firestore scaling tips", "url": "https://firebase.blog/firestore",
+             "objectID": "333", "points": 80,
+             "created_at_i": int((datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()),
+             "story_text": ""},
+        ]
+        response_bytes = self._make_hn_response(hits)
+
+        call_count = 0
+        def mock_urlopen(req, timeout=None):
+            nonlocal call_count
+            call_count += 1
+            mock_resp = MagicMock()
+            mock_resp.read.return_value = response_bytes
+            mock_resp.__enter__ = lambda s: s
+            mock_resp.__exit__ = MagicMock(return_value=False)
+            return mock_resp
+
+        with patch("urllib.request.urlopen", side_effect=mock_urlopen):
+            articles = pc.fetch_hn("firebase", since_days=7)
+
+        # firebase has 3 keywords — same URL across all calls should yield 1 article
+        assert len(articles) == 1
